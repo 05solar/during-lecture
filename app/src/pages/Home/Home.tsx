@@ -11,7 +11,7 @@ import { GAME_COVERS } from '../../data/covers'
 import { getBestScore, subscribe } from '../../lib/scoreStore'
 import './Home.css'
 
-const SPOTLIGHT_ID = '2048'
+const SPOTLIGHT_ID = 'burger'
 
 export default function Home() {
   const navigate = useNavigate()
