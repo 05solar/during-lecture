@@ -1,0 +1,14 @@
+/* GameGrid.css
+   미니게임 카드를 담는 반응형 그리드. 넓은 화면에서 2~4열로 채운다(균일 그리드). */
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .game-grid {
+    grid-template-columns: 1fr;
+  }
+}

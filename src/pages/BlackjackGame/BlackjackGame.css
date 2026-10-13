@@ -1,0 +1,240 @@
+/* BlackjackGame.css
+   블랙잭 스타일. 카드(흰 바탕·빨강/검정 무늬)와 펠트 그린 테이블은 게임 고유색으로 유지하되,
+   설명창/칩/버튼/메시지 등 UI 크롬은 During-Lecture 오프화이트 테마 토큰에 맞춘다.
+   (그라데이션 크롬 / backdrop-filter / 글래스 / 무거운 그림자 없음) */
+
+.bj-help {
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.bj-help__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: none;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text-strong);
+}
+.bj-help__state {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.bj-help__body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  border-top: 1px solid var(--line);
+}
+
+.bj-wallet {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 2px;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.bj-wallet b {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.bj-area {
+  margin-bottom: 12px;
+  /* 펠트 그린 테이블(게임 고유색 유지) */
+  background: var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+}
+.bj-area__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.bj-hand {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 84px;
+  flex-wrap: wrap;
+  perspective: 700px;
+}
+
+.bj-card {
+  width: 58px;
+  height: 82px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #d5d5d5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #1a1a1a;
+}
+/* 카드가 새로 나올 때(딜/히트) 왼쪽에서 플립하며 나타나는 애니메이션 */
+.bj-hand .bj-card:not(.bj-card--empty) {
+  animation: bjFlipIn 0.34s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transform-origin: left center;
+  backface-visibility: hidden;
+}
+@keyframes bjFlipIn {
+  0% {
+    transform: translateX(-46px) rotateY(-95deg);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) rotateY(0deg);
+    opacity: 1;
+  }
+}
+.bj-card--red {
+  color: #d11e2a;
+}
+.bj-card__rank {
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+}
+.bj-card__suit {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.bj-card--back {
+  background: #2f4a3a;
+  border-color: #223729;
+}
+.bj-card--empty {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
+.bj-message {
+  text-align: center;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-strong);
+}
+
+.bj-controls {
+  margin-top: 4px;
+}
+.bj-controls--row {
+  display: flex;
+  gap: 10px;
+}
+/* 베팅 단계: 베팅 칩 + 시작 버튼 세로로 중앙정렬 */
+.bj-controls:not(.bj-controls--row) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.bj-bet {
+  align-self: stretch;
+}
+.bj-bet__label {
+  display: block;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.bj-bet__chips {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+/* 시작 버튼: 세로 플렉스에서 늘어나지 않고 가운데에 */
+.bj-controls:not(.bj-controls--row) .bj-btn {
+  flex: none;
+  min-width: 60%;
+}
+.bj-chip {
+  min-width: 52px;
+  padding: 10px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+.bj-chip.on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--line-strong);
+}
+.bj-chip:disabled {
+  opacity: 0.35;
+}
+
+.bj-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
+}
+.bj-btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.bj-btn--primary:hover {
+  background: var(--accent-hover);
+}
+.bj-btn:disabled {
+  opacity: 0.4;
+}
+.bj-broke {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+}
+.bj-warn {
+  text-align: center;
+  font-size: 13px;
+  color: var(--lose);
+  padding: 8px;
+}

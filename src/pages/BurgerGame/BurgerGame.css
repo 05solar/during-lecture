@@ -1,0 +1,117 @@
+/* BurgerGame.css
+   버거 타워 스타일. 플레이 무대는 그라데이션 대신 가라앉은 오프화이트 표면 + 하이라인으로 처리한다.
+   재료 스프라이트 색은 게임 고유 색을 그대로 유지한다. */
+
+.burger {
+  width: 100%;
+  max-width: 400px;
+}
+
+.burger__hud {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.burger__count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.burger__count-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.burger__count-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.burger__next {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.burger__stage {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+.burger__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+}
+
+.burger__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.burger__over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(27, 26, 23, 0.5);
+}
+.burger__over-card {
+  width: 76%;
+  max-width: 240px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px 18px;
+  text-align: center;
+}
+.burger__over-card h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.burger__over-score {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 6px 0 16px;
+}
+.burger__over-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.burger__btn {
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.burger__btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.burger__btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.burger__hint {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}

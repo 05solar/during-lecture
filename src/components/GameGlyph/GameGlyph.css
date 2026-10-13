@@ -1,0 +1,8 @@
+/* GameGlyph.css
+   커스텀 SVG 글리프. 크기는 size prop으로 조절하고, 색은 currentColor로 상속한다.
+   (틀/배경은 사용하는 쪽에서 담당) */
+
+.game-glyph {
+  display: block;
+  flex-shrink: 0;
+}

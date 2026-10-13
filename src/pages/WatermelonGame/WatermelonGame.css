@@ -1,0 +1,137 @@
+/* WatermelonGame.css
+   수박 게임 스타일. 과일 스프라이트 색은 게임 고유 색을 유지하되, 틀/버튼/오버레이는
+   During-Lecture 오프화이트 테마 토큰에 맞춘다(그라데이션/글라스/무거운 그림자 없음). */
+
+.wgame {
+  width: 100%;
+  max-width: 360px;
+}
+
+.wgame__scores {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.wgame__score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.wgame__score-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.wgame__score-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wgame__next {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wgame__next-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.wgame__next-dot {
+  min-width: 42px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--line);
+}
+
+.wgame__stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.wgame__canvas {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  touch-action: none;
+}
+
+/* 게임 오버 오버레이 */
+.wgame__over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(27, 26, 23, 0.5);
+  border-radius: var(--radius);
+}
+
+.wgame__over-card {
+  width: 78%;
+  max-width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px 18px;
+  text-align: center;
+}
+
+.wgame__over-card h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.wgame__over-score {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 6px 0 16px;
+}
+
+.wgame__over-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wgame__btn {
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.wgame__btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.wgame__hint {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

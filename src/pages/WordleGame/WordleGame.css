@@ -1,0 +1,143 @@
+/* WordleGame.css
+   워들 스타일. 정답/부분정답/오답 색은 게임 고유 신호색을 저채도로 유지하고,
+   나머지 UI는 During-Lecture 오프화이트 테마에 맞춘다. */
+
+.wordle {
+  width: 100%;
+  max-width: 360px;
+}
+
+.wordle__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.wordle__hint-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.wordle__new {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.wordle__new:hover {
+  background: var(--accent-hover);
+}
+
+.wordle__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.wordle__grid.shake {
+  animation: wshake 0.4s;
+}
+@keyframes wshake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.wordle__row {
+  display: flex;
+  gap: 6px;
+}
+.wordle__cell {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--text-strong);
+  background: var(--surface);
+  text-transform: uppercase;
+}
+.wordle__cell.filled {
+  border-color: var(--line-strong);
+}
+.wordle__cell.correct {
+  background: #5f8a5a;
+  border-color: #5f8a5a;
+  color: #fff;
+}
+.wordle__cell.present {
+  background: #b39a4d;
+  border-color: #b39a4d;
+  color: #fff;
+}
+.wordle__cell.absent {
+  background: #8a8880;
+  border-color: #8a8880;
+  color: #fff;
+}
+
+.wordle__result {
+  text-align: center;
+  padding: 11px;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+}
+.wordle__result.won {
+  background: var(--accent-soft);
+  color: var(--win);
+}
+.wordle__result.lost {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.wordle__keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+.wordle__krow {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  width: 100%;
+}
+.wordle__key {
+  flex: 1;
+  max-width: 34px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.wordle__key.wide {
+  max-width: 56px;
+  font-size: 0.72rem;
+}
+.wordle__key.correct { background: #5f8a5a; color: #fff; }
+.wordle__key.present { background: #b39a4d; color: #fff; }
+.wordle__key.absent { background: #8a8880; color: #fff; }
+
+.wordle__list {
+  margin: 16px auto 0;
+  display: block;
+  padding: 11px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}

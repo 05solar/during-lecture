@@ -1,0 +1,12 @@
+/* App.css
+   앱 전체 레이아웃 뼈대. 최소 높이를 뷰포트로 잡아 배경이 화면을 채우게 한다. */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__main {
+  flex: 1;
+}

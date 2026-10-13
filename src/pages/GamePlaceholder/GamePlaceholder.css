@@ -1,0 +1,51 @@
+/* GamePlaceholder.css
+   게임 임시 페이지 레이아웃. 안내 영역은 박스 대신 가라앉은 표면으로 구분한다. */
+
+.game-page {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.game-page__back {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.game-page__back:hover {
+  color: var(--accent);
+}
+
+.game-page__title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--text-strong);
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.game-page__tagline {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.game-page__notice {
+  background-color: var(--surface-sunken);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+
+.game-page__notice-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin-bottom: 8px;
+}
+
+.game-page__notice-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}

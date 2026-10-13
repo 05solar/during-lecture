@@ -1,0 +1,188 @@
+/* Game2048.css
+   2048 게임 스타일. 타일 색은 게임 고유 색을 유지하되, 틀/버튼/오버레이는
+   During-Lecture 오프화이트 테마 토큰에 맞춘다(그라데이션/리퀴드글라스 없음). */
+
+.g2048 {
+  width: 100%;
+  max-width: 360px;
+}
+
+.g2048__scores {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.g2048__score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.g2048__score-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.g2048__score-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.g2048__new {
+  margin-left: auto;
+  padding: 7px 15px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.g2048__new:hover {
+  background: var(--accent-hover);
+}
+
+.g2048__board-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* 328 = 패딩8 + 칸72*4 + 간격8*3 */
+.g2048__board {
+  position: relative;
+  width: 328px;
+  height: 328px;
+  padding: 8px;
+  background: #cfc9bd;
+  border-radius: var(--radius);
+  touch-action: none;
+  user-select: none;
+  display: grid;
+  grid-template-columns: repeat(4, 72px);
+  grid-template-rows: repeat(4, 72px);
+  gap: 8px;
+}
+
+.g2048__cell {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.g2048__tile {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 30px;
+  color: #5c564e;
+  background: #eee4da;
+  transform: translate(var(--x), var(--y));
+  transition: transform 0.13s ease;
+  will-change: transform;
+}
+
+.g2048__tile.v128,
+.g2048__tile.v256,
+.g2048__tile.v512 { font-size: 26px; }
+.g2048__tile.v1024,
+.g2048__tile.v2048 { font-size: 21px; }
+
+.g2048__tile.v2 { background: #eee4da; }
+.g2048__tile.v4 { background: #ede0c8; }
+.g2048__tile.v8 { background: #e8a877; color: #fff; }
+.g2048__tile.v16 { background: #e3915c; color: #fff; }
+.g2048__tile.v32 { background: #de7a5a; color: #fff; }
+.g2048__tile.v64 { background: #d96141; color: #fff; }
+.g2048__tile.v128 { background: #e0c56e; color: #fff; }
+.g2048__tile.v256 { background: #e0c25d; color: #fff; }
+.g2048__tile.v512 { background: #ddbe4d; color: #fff; }
+.g2048__tile.v1024 { background: #d9b93c; color: #fff; }
+.g2048__tile.v2048 { background: #d4b02c; color: #fff; }
+
+.g2048__tile.merged {
+  animation: pop2048 0.18s ease;
+  z-index: 3;
+}
+@keyframes pop2048 {
+  0% { transform: translate(var(--x), var(--y)) scale(1); }
+  50% { transform: translate(var(--x), var(--y)) scale(1.2); }
+  100% { transform: translate(var(--x), var(--y)) scale(1); }
+}
+
+.g2048__tile.new {
+  animation: appear2048 0.16s ease;
+  z-index: 2;
+}
+@keyframes appear2048 {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.g2048__over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(27, 26, 23, 0.5);
+  border-radius: var(--radius);
+  z-index: 5;
+}
+.g2048__over-card {
+  width: 78%;
+  max-width: 240px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px 18px;
+  text-align: center;
+}
+.g2048__over-card h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.g2048__over-score {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 6px 0 16px;
+}
+.g2048__over-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.g2048__btn {
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.g2048__btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.g2048__hint {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
