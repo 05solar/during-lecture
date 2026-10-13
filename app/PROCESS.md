@@ -2,6 +2,16 @@
 
 진행 사항 기록. **명령을 하나 수행할 때마다** 이 문서를 갱신한다. (최신 항목이 위)
 
+## 2026-10-13 — #10 레포 구조 정리: 프로젝트를 app/로, 루트에 랜딩 README
+
+- 프로젝트 소스 전체를 레포 **`app/` 하위 폴더로 이동**(`git mv` + 일부 `mv`). 빌드 산출물(dist·tsbuildinfo 등)은 정리.
+- 레포 **루트에는 필요한 것만** 남김: `README.md`(랜딩) · `screenshot.png` · `.github/`(Actions) · `.gitignore`.
+- **루트 README(신규·별개)**: 최상단에 GitHub Pages 링크 크게(`https://05solar.github.io/during-lecture/`)
+  → 실제 사이트 스크린샷(Edge 헤드리스로 캡처) → 소개글/기술·배포 안내. `app/README.md`로 상세 문서 링크.
+- **배포 워크플로 수정**: `defaults.run.working-directory: app`, `cache-dependency-path: app/package-lock.json`,
+  업로드 경로 `app/dist`. (`.github`는 레포 루트 유지 — Actions 요구사항)
+- `.gitignore`에 `.vite` 추가. `app/`에서 `npm run build` 정상 확인.
+
 ## 2026-10-08 — #9 신규 게임: 두더지 잡기(Whack-a-Mole)
 
 - `pages/WhackGame/`(tsx+css) 추가: 3x3 구멍에서 두더지가 무작위로 튀어나오고, 30초 동안 클릭해

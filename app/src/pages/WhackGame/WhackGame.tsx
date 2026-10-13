@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import GamePage from '../../components/GamePage/GamePage'
 import { submitScore } from '../../lib/scoreStore'
-import moleImage from './assets/mole.png'
+import moleImage from './assets/mole.webp'
 import './WhackGame.css'
 
 const HOLES = 9
