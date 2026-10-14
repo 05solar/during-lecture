@@ -13,6 +13,7 @@ import OmokGame from './pages/OmokGame/OmokGame'
 import GoGame from './pages/GoGame/GoGame'
 import BurgerGame from './pages/BurgerGame/BurgerGame'
 import WhackGame from './pages/WhackGame/WhackGame'
+import TsumegoGame from './pages/TsumegoGame/TsumegoGame'
 import GamePlaceholder from './pages/GamePlaceholder/GamePlaceholder'
 import './App.css'
 
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/game/baduk" element={<GoGame />} />
           <Route path="/game/burger" element={<BurgerGame />} />
           <Route path="/game/whack" element={<WhackGame />} />
+          <Route path="/game/tsumego" element={<TsumegoGame />} />
           <Route path="/game/:id" element={<GamePlaceholder />} />
           <Route path="*" element={<Home />} />
         </Routes>

@@ -49,6 +49,7 @@ export type GlyphKey =
   | 'pick'
   | 'omok'
   | 'go'
+  | 'tsumego'
   | 'burger'
 
 export const GAMES: GameMeta[] = [
@@ -120,6 +121,16 @@ export const GAMES: GameMeta[] = [
     tagline: '집을 많이 짓는 쪽이 이기는 고전 전략 보드게임.',
     scoreUnit: '최고 점수',
     icon: 'go',
+    status: 'ready',
+  },
+  {
+    id: 'tsumego',
+    category: 'board',
+    difficulty: 'normal',
+    title: '사활 훈련',
+    tagline: '한 수의 급소를 찾아 돌을 살리거나 잡는 바둑 사활 문제.',
+    scoreUnit: '최고 점수',
+    icon: 'tsumego',
     status: 'ready',
   },
   {

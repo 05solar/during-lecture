@@ -82,6 +82,13 @@ const GLYPHS: Record<GlyphKey, JSX.Element> = {
       <circle cx="16" cy="16" r="11" />
     </>
   ),
+  tsumego: (
+    <>
+      <path d="M7 8v16M13 8v16M19 8v16M25 8v16M7 8h18M7 14h18M7 20h18M7 24h18" strokeWidth="1" />
+      <circle cx="13" cy="14" r="3.2" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="20" r="3.2" />
+    </>
+  ),
   burger: (
     <>
       <path d="M6 11c0-3.5 4.5-6 10-6s10 2.5 10 6" />

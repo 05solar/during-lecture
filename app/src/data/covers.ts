@@ -20,6 +20,7 @@ export const GAME_COVERS: Record<string, string> = {
   mine: coverMine,
   omok: coverOmok,
   baduk: coverBaduk,
+  tsumego: coverBaduk,
   burger: coverBurger,
   whack: coverWhack,
 }
