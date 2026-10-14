@@ -126,7 +126,7 @@ export const GAMES: GameMeta[] = [
   {
     id: 'tsumego',
     category: 'board',
-    difficulty: 'normal',
+    difficulty: 'hard',
     title: '사활 훈련',
     tagline: '한 수의 급소를 찾아 돌을 살리거나 잡는 바둑 사활 문제.',
     scoreUnit: '최고 점수',
