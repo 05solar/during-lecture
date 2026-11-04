@@ -100,8 +100,14 @@ export default function WordleGame() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') press('ENTER')
-      else if (e.key === 'Backspace') press('DEL')
+      // 한글 IME가 켜진 상태에서는 keydown의 e.key가 'Process'/'Unidentified'로
+      // 뭉개지거나 합성 중 이벤트가 씹히는 경우가 있다. e.code(물리 키, KeyA~KeyZ)는
+      // 레이아웃·IME 영향을 받지 않으므로 글자 판정의 기준으로 삼는다.
+      if (e.isComposing || e.keyCode === 229) return
+      if (e.key === 'Enter') return press('ENTER')
+      if (e.key === 'Backspace') return press('DEL')
+      const m = /^Key([A-Z])$/.exec(e.code)
+      if (m) press(m[1])
       else if (/^[a-zA-Z]$/.test(e.key)) press(e.key.toUpperCase())
     }
     window.addEventListener('keydown', onKey)

@@ -67,6 +67,17 @@
   color: #fff;
 }
 
+.omok__forbid {
+  margin: -4px 0 12px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--lose) 14%, var(--surface));
+  color: var(--lose);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .omok__board-wrap {
   position: relative;
   display: flex;

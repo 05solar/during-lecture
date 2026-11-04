@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import Matter from 'matter-js'
 import GamePage from '../../components/GamePage/GamePage'
 import { submitScore } from '../../lib/scoreStore'
-import { FRUITS, loadFruitImages } from './fruitSprites'
+import { FRUITS, loadFruitSpriteSheet, SPRITE_CELL_SIZE, spriteCellFor } from './fruitSprites'
 import './WatermelonGame.css'
 
 const { Engine, Bodies, Composite, Events } = Matter
@@ -68,7 +68,7 @@ export default function WatermelonGame() {
     let raf = 0
     let last = Date.now()
     const merging = new Set<number>()
-    const sprites = loadFruitImages()
+    const spriteSheet = loadFruitSpriteSheet()
     setNextTier(upcomingTier)
 
     function addFruit(tier: number, x: number, y: number) {
@@ -142,11 +142,21 @@ export default function WatermelonGame() {
     // 그리기 (과일 캐릭터 스프라이트, 미로드 시 원으로 대체)
     function drawFruit(x: number, y: number, tier: number, ghost = false) {
       const f = FRUITS[tier]
-      const sprite = sprites[tier]
       ctx.globalAlpha = ghost ? 0.4 : 1
-      if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-        const d = f.r * 2.1
-        ctx.drawImage(sprite, x - d / 2, y - d / 2, d, d)
+      if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
+        const cell = spriteCellFor(tier)
+        const d = f.r * 2.12
+        ctx.drawImage(
+          spriteSheet,
+          cell.x,
+          cell.y,
+          SPRITE_CELL_SIZE,
+          SPRITE_CELL_SIZE,
+          x - d / 2,
+          y - d / 2,
+          d,
+          d,
+        )
       } else {
         ctx.beginPath()
         ctx.arc(x, y, f.r, 0, Math.PI * 2)

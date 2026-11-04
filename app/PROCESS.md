@@ -1,5 +1,22 @@
 # PROCESS.md
 
+## 2026-11-04 #15 사활 훈련 전면 재구축 + 워들/블랙잭/오목 수정
+
+- **사활 훈련(최우선 요청)**: 기존 48문제는 9x9 판에 돌 4~6개만 놓인 얕은 창작 축소판이었고, "해법"도 하드코딩된 2수 시퀀스 + 고정된 오답 응수 1개뿐이라 실전 사활처럼 동작하지 않았다는 지적을 받아 전면 재설계했다.
+  - `tsumegoSolver.ts` 신규: go.ts의 실제 포획/자충수/패 규칙 위에서 작동하는 AND-OR 미니맥스 사활 솔버(`solve`/`isSettled`). 문제마다 지정한 `region`(궁도) 안에서만 양쪽이 두도록 제한해 가지치기하고, 전치표로 메모이즈한다. 오답을 둬도 **그 자리에서 실제로 계산한** 백의 최선 응수가 나온다(고정된 한 수가 아님).
+  - `tsumegoData.ts` 전면 재작성: 궁도 모양(폴리오미노)만 정의하면 벽(수비 쪽 돌)과 바깥 봉쇄 고리(공격 쪽 돌)를 자동 생성하는 `buildEnclosure()`로 완전히 밀폐된 로컬 사활형을 구성. 역사서 특정 그림이라고 거짓 귀속하지 않고 "표준 기본 사활형" 명칭으로 정직하게 표기. 일자/구부러진/뾰족/우긴 사궁, 일자/뭉친 오궁, 직사각형 육궁 10개 기본형 x 회전·반사 5종 = 50문제. **goal(흑이 공격/수비)은 추정이 아니라 솔버 자체 검증(임시 스크립트, 커밋 제외)으로 50문제 전부 확인 후 확정**했다.
+  - `TsumegoGame.tsx` 제어 흐름을 솔버 호출 기반으로 교체: 정답이면 백의 실제 최선 응수를 두고, 더 둘 필요가 없을 만큼 승부가 갈리면(불필요한 공배 메우기 없이) 즉시 정답 처리. 오답이면 백의 실제 응징 수를 두고 반박 수순으로 전환. 자유 분석 모드는 유지.
+- **워들**: 한글 IME가 켜진 상태에서 영문 키 입력이 가끔 씹히는 버그 수정 — `keydown`의 `e.key`(IME에 영향받음) 대신 물리 키 `e.code`(KeyA~KeyZ)를 기준으로 판정하고, `isComposing`/`keyCode===229`인 합성 중 이벤트는 무시.
+- **블랙잭**: 카드가 너무 작다는 피드백으로 `.bj-card` 크기를 58×82px → `clamp(72px,20vw,92px)` 반응형으로 확대, 랭크/슈트 폰트와 카드 영역 간격도 비례 확대.
+- **오목**: 흑/백 선택 토글 추가(선택 시 백을 고르면 AI가 먼저 중앙에 착수), `aiMove`/`checkWin` 등을 색상 파라미터화. 렌주 표준 금수 규칙(쌍삼·쌍사·장목, 흑 전용) 추가 — 정확히 5목을 완성하는 수는 금수보다 항상 우선 허용. AI가 흑일 때도 금수 자리는 후보에서 제외.
+- 검증: 사활 솔버로 50문제 자체 검증(전부 통과) + Playwright로 4개 게임 전부 실제 클릭/키보드 입력까지 구동해 스크린샷 확인, 오목 금수 판정 5개 케이스 단위 검증. `npm run build` 통과.
+
+## 2026-10-14 #14 수박 게임 과일 스프라이트를 레트로 픽셀아트로 교체
+
+- `fruit-sprites-64bit.png`를 사용자가 제공한 레트로 픽셀아트 스프라이트 시트로 교체(동일 4x3/362px 그리드, 배경 완전 투명 확인됨).
+- 구성이 바뀌어 `fruitSprites.ts`의 5번째 과일을 `감` → `레몬`으로 갱신(반지름·병합 순서는 그대로, 명칭/색상만 맞춤). 마지막 칸(수박 조각)은 장식용으로 미사용.
+- `npm run build` 통과.
+
 ## 2026-10-14 #13 사활 훈련: 48문제·반박 수순·자유 분석
 
 - 공개 고전 사활집 `Gokyo Shumyo`(1812), `Xuanxuan Qijing`(~1347), `Hatsuyoron`(~1713)의 형태를 바탕으로 8개 고난도 기본형을 회전·반사해 번호 선택 가능한 48문제로 확장했다.
@@ -12,6 +29,12 @@
 - `pages/TsumegoGame/`에 기존 바둑 게임과 동일한 캔버스 바둑판/바둑돌 표현을 사용하는 사활 훈련을 추가했다.
 - 고전 공개 사활집(Gokyo Shumyo, Xuanxuan Qijing, Hatsuyoron)의 초급 형태를 게임 풀이 흐름으로 재구성한 4문제, 자동 응수, 오답 피드백, 최고 점수 저장을 제공한다.
 - `App.tsx`, 게임 카탈로그, 커스텀 글리프, 기존 바둑 커버 재사용 목록을 갱신했다.
+
+## 2026-10-13 #11 Watermelon game 64-bit fruit sprite refresh
+
+- Added `pages/WatermelonGame/assets/fruit-sprites-64bit.png`: a transparent 4 x 3 pixel-art sprite sheet containing the eleven merge-stage fruits.
+- Replaced the SVG data-URI fruit artwork with sprite-sheet metadata and canvas source-cell rendering in `fruitSprites.ts` and `WatermelonGame.tsx`.
+- Verified with `npm run build` from `app/` (TypeScript and Vite build succeeded).
 
 진행 사항 기록. **명령을 하나 수행할 때마다** 이 문서를 갱신한다. (최신 항목이 위)
 

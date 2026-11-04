@@ -63,25 +63,28 @@ function patternScore(len: number, ends: number): number {
   if (len === 1) return ends === 2 ? 10 : ends === 1 ? 1 : 0
   return 0
 }
+// 한 방향(양쪽)으로 who의 연속 길이와, 그 끝 바로 바깥이 빈 칸인 수(0~2)를 계산
+function scanDir(b: Board, r: number, c: number, dr: number, dc: number, who: Cell): { len: number; ends: number } {
+  let len = 1
+  let ends = 0
+  let s = 1
+  while (true) {
+    const nr = r + dr * s, nc = c + dc * s
+    if (inRange(nr, nc) && b[nr][nc] === who) { len++; s++ }
+    else { if (inRange(nr, nc) && b[nr][nc] === 0) ends++; break }
+  }
+  s = 1
+  while (true) {
+    const nr = r - dr * s, nc = c - dc * s
+    if (inRange(nr, nc) && b[nr][nc] === who) { len++; s++ }
+    else { if (inRange(nr, nc) && b[nr][nc] === 0) ends++; break }
+  }
+  return { len, ends }
+}
 function cellScore(b: Board, r: number, c: number, who: Cell): number {
   let total = 0
   for (const [dr, dc] of DIRS) {
-    let len = 1
-    let ends = 0
-    // 정방향
-    let s = 1
-    while (true) {
-      const nr = r + dr * s, nc = c + dc * s
-      if (inRange(nr, nc) && b[nr][nc] === who) { len++; s++ }
-      else { if (inRange(nr, nc) && b[nr][nc] === 0) ends++; break }
-    }
-    // 역방향
-    s = 1
-    while (true) {
-      const nr = r - dr * s, nc = c - dc * s
-      if (inRange(nr, nc) && b[nr][nc] === who) { len++; s++ }
-      else { if (inRange(nr, nc) && b[nr][nc] === 0) ends++; break }
-    }
+    const { len, ends } = scanDir(b, r, c, dr, dc, who)
     total += patternScore(len, ends)
   }
   return total
@@ -99,22 +102,34 @@ function hasNeighbor(b: Board, r: number, c: number): boolean {
 function threatCount(b: Board, r: number, c: number, who: Cell): number {
   let n = 0
   for (const [dr, dc] of DIRS) {
-    let len = 1, ends = 0
-    let s = 1
-    while (true) {
-      const nr = r + dr * s, nc = c + dc * s
-      if (inRange(nr, nc) && b[nr][nc] === who) { len++; s++ }
-      else { if (inRange(nr, nc) && b[nr][nc] === 0) ends++; break }
-    }
-    s = 1
-    while (true) {
-      const nr = r - dr * s, nc = c - dc * s
-      if (inRange(nr, nc) && b[nr][nc] === who) { len++; s++ }
-      else { if (inRange(nr, nc) && b[nr][nc] === 0) ends++; break }
-    }
+    const { len, ends } = scanDir(b, r, c, dr, dc, who)
     if (len >= 4 || (len === 3 && ends === 2)) n++
   }
   return n
+}
+
+// 렌주 표준 금수 규칙(흑 전용): 쌍삼(33)·쌍사(44)·장목(6목 이상).
+// 단, 정확히 5목을 완성하는 수는 금수 규칙보다 우선해 항상 허용된다(공식 룰).
+type Forbidden = 'none' | 'overline' | 'double-three' | 'double-four'
+function isForbiddenForBlack(b: Board, r: number, c: number): Forbidden {
+  const nb = b.map((row) => [...row]) as Board
+  nb[r][c] = BLACK
+  let hasFive = false
+  let hasOverline = false
+  let threeCount = 0
+  let fourCount = 0
+  for (const [dr, dc] of DIRS) {
+    const { len, ends } = scanDir(nb, r, c, dr, dc, BLACK)
+    if (len >= 6) hasOverline = true
+    else if (len === 5) hasFive = true
+    else if (len === 4 && ends >= 1) fourCount++
+    else if (len === 3 && ends === 2) threeCount++
+  }
+  if (hasFive) return 'none'
+  if (hasOverline) return 'overline'
+  if (threeCount >= 2) return 'double-three'
+  if (fourCount >= 2) return 'double-four'
+  return 'none'
 }
 function candidates(b: Board): [number, number][] {
   const list: [number, number][] = []
@@ -123,16 +138,20 @@ function candidates(b: Board): [number, number][] {
       if (!b[r][c] && hasNeighbor(b, r, c)) list.push([r, c])
   return list
 }
-// 규칙기반 AI (난이도별 조정)
-function aiMove(b: Board, diff: Diff): [number, number] {
-  const cands = candidates(b)
+// 규칙기반 AI (난이도별 조정). aiColor가 BLACK이면 금수(33/44/장목) 자리를 후보에서 제외한다.
+function aiMove(b: Board, diff: Diff, aiColor: Cell, humanColor: Cell): [number, number] {
+  let cands = candidates(b)
+  if (aiColor === BLACK) {
+    const legal = cands.filter(([r, c]) => isForbiddenForBlack(b, r, c) === 'none')
+    if (legal.length) cands = legal
+  }
   if (!cands.length) return [Math.floor(N / 2), Math.floor(N / 2)]
 
   // 쉬움: 35% 무작위, 아니면 수비를 거의 안 보는 약한 상위 후보 중 랜덤
   if (diff === 'easy') {
     if (Math.random() < 0.35) return cands[Math.floor(Math.random() * cands.length)]
     const scored = cands
-      .map(([r, c]) => ({ rc: [r, c] as [number, number], v: cellScore(b, r, c, WHITE) + cellScore(b, r, c, BLACK) * 0.3 }))
+      .map(([r, c]) => ({ rc: [r, c] as [number, number], v: cellScore(b, r, c, aiColor) + cellScore(b, r, c, humanColor) * 0.3 }))
       .sort((a, z) => z.v - a.v)
     const top = scored.slice(0, Math.min(5, scored.length))
     return top[Math.floor(Math.random() * top.length)].rc
@@ -143,12 +162,12 @@ function aiMove(b: Board, diff: Diff): [number, number] {
   let best: [number, number] = cands[0]
   let bestVal = -Infinity
   for (const [r, c] of cands) {
-    const attack = cellScore(b, r, c, WHITE)
-    const defense = cellScore(b, r, c, BLACK)
+    const attack = cellScore(b, r, c, aiColor)
+    const defense = cellScore(b, r, c, humanColor)
     let val = attack + defense * defW
     if (diff === 'hard') {
-      if (threatCount(b, r, c, WHITE) >= 2) val += 800 // 내 포크 형성
-      if (threatCount(b, r, c, BLACK) >= 2) val += 700 // 상대 포크 자리 선점
+      if (threatCount(b, r, c, aiColor) >= 2) val += 800 // 내 포크 형성
+      if (threatCount(b, r, c, humanColor) >= 2) val += 700 // 상대 포크 자리 선점
     }
     if (val > bestVal) { bestVal = val; best = [r, c] }
   }
@@ -166,8 +185,12 @@ export default function OmokGame() {
   const [thinking, setThinking] = useState(false)
   const [gained, setGained] = useState(0)
   const [diff, setDiff] = useState<Diff>('medium')
+  const [humanColor, setHumanColor] = useState<Cell>(BLACK)
+  const aiColor: Cell = humanColor === BLACK ? WHITE : BLACK
+  const [forbidMsg, setForbidMsg] = useState<string | null>(null)
   const [lastMove, setLastMove] = useState<[number, number] | null>(null)
   const posted = useRef(false)
+  const isBoardEmpty = board.every((row) => row.every((v) => !v))
 
   // 보드 표시 크기(px). PC(넓은 화면)에서는 훨씬 크게, 모바일에서는 화면 폭에 맞춘다.
   // 내부 좌표는 항상 W(326) 기준이며, 렌더 시 배율(scale)만 키워 선명하게 확대한다.
@@ -189,8 +212,26 @@ export default function OmokGame() {
     setThinking(false)
     setGained(0)
     setLastMove(null)
+    setForbidMsg(null)
     posted.current = false
   }, [])
+
+  // 사람이 백(후공)을 선택하면, 빈 보드에서 AI(흑)가 먼저 중앙에 착수한다.
+  useEffect(() => {
+    if (status !== 'playing' || humanColor !== WHITE || thinking) return
+    if (!isBoardEmpty) return
+    setThinking(true)
+    const t = window.setTimeout(() => {
+      const [ar, ac] = aiMove(board, diff, BLACK, WHITE)
+      const nb = board.map((row) => [...row]) as Board
+      nb[ar][ac] = BLACK
+      setBoard(nb)
+      setLastMove([ar, ac])
+      setThinking(false)
+    }, 350)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, humanColor, isBoardEmpty, diff])
 
   const winPoints = diff === 'easy' ? 100 : diff === 'hard' ? 5000 : 1000
 
@@ -210,21 +251,32 @@ export default function OmokGame() {
 
   const place = (r: number, c: number) => {
     if (status !== 'playing' || thinking || board[r][c]) return
+    if (humanColor === BLACK) {
+      const f = isForbiddenForBlack(board, r, c)
+      if (f !== 'none') {
+        setForbidMsg(
+          f === 'overline' ? '장목(6목 이상)은 금수입니다.' : f === 'double-three' ? '쌍삼(33)은 금수입니다.' : '쌍사(44)는 금수입니다.'
+        )
+        window.setTimeout(() => setForbidMsg(null), 1600)
+        return
+      }
+    }
+    setForbidMsg(null)
     const nb = board.map((row) => [...row]) as Board
-    nb[r][c] = BLACK
+    nb[r][c] = humanColor
     setBoard(nb)
     setLastMove([r, c])
-    if (checkWin(nb, r, c, BLACK)) return finish('won')
+    if (checkWin(nb, r, c, humanColor)) return finish('won')
     if (isFull(nb)) return finish('draw')
     setThinking(true)
     window.setTimeout(() => {
-      const [ar, ac] = aiMove(nb, diff)
+      const [ar, ac] = aiMove(nb, diff, aiColor, humanColor)
       const nb2 = nb.map((row) => [...row]) as Board
-      nb2[ar][ac] = WHITE
+      nb2[ar][ac] = aiColor
       setBoard(nb2)
       setLastMove([ar, ac])
       setThinking(false)
-      if (checkWin(nb2, ar, ac, WHITE)) return finish('lost')
+      if (checkWin(nb2, ar, ac, aiColor)) return finish('lost')
       if (isFull(nb2)) return finish('draw')
     }, 350)
   }
@@ -308,7 +360,7 @@ export default function OmokGame() {
     status === 'won' ? `승리! +${gained}점`
     : status === 'lost' ? '패배… 다시 도전!'
     : status === 'draw' ? `무승부 +${gained}점`
-    : thinking ? 'AI가 생각 중…' : '내 차례 (흑돌)'
+    : thinking ? 'AI가 생각 중…' : `내 차례 (${humanColor === BLACK ? '흑돌' : '백돌'})`
 
   return (
     <GamePage gameId="omok" title="오목">
@@ -332,6 +384,27 @@ export default function OmokGame() {
           </div>
         </div>
 
+        <div className="omok__diff">
+          <span className="omok__diff-label">내 돌</span>
+          <div className="omok__diff-seg">
+            <button
+              className={'omok__diff-btn' + (humanColor === BLACK ? ' on' : '')}
+              disabled={!isBoardEmpty}
+              onClick={() => setHumanColor(BLACK)}
+            >
+              흑(선공)
+            </button>
+            <button
+              className={'omok__diff-btn' + (humanColor === WHITE ? ' on' : '')}
+              disabled={!isBoardEmpty}
+              onClick={() => setHumanColor(WHITE)}
+            >
+              백(후공)
+            </button>
+          </div>
+        </div>
+        {forbidMsg && <p className="omok__forbid">{forbidMsg}</p>}
+
         <div className="omok__board-wrap">
           <canvas ref={canvasRef} className="omok__canvas" onClick={onClick} />
           {status !== 'playing' && (
@@ -353,7 +426,10 @@ export default function OmokGame() {
         <div className="omok__actions">
           <button className="omok__btn" onClick={reset}>새 게임</button>
         </div>
-        <p className="omok__hint">교차점을 눌러 흑돌을 놓으세요. 먼저 5개를 연결하면 승리! (현재 난이도 승리 +{winPoints}점)</p>
+        <p className="omok__hint">
+          교차점을 눌러 돌을 놓으세요. 먼저 5개를 연결하면 승리! 흑은 쌍삼·쌍사·장목 금수가 적용됩니다.
+          (현재 난이도 승리 +{winPoints}점)
+        </p>
       </div>
     </GamePage>
   )
