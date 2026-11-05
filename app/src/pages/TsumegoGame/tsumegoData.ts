@@ -1,17 +1,23 @@
 // Tsumego (life-and-death) problem bank.
 //
-// Every base shape here came out of an exhaustive sweep over all distinct (free)
-// polyominoes of size 4-6 — not a handful of shapes rotated into the four corners.
-// For each shape, both roles were tested against tsumegoSolver's real AND-OR search
-// (see scripts/explore — not shipped): can black kill it, and separately, can black
-// (moving first, as the shape's own group) live? Only shapes where the solver actually
-// proved the stated goal are kept; nothing here is a hand-typed guess. Eye-spaces of
-// 7+ points were excluded on purpose — the sweep confirmed the standard Go-theory
-// result that a 7-point-or-larger eye is always alive regardless of shape, so they
-// make weak puzzles (there's rarely a real "must-find" move). 28 distinct shapes are
-// used; only 18 of them appear a second time (in a different corner/orientation), and
-// 4 shapes legitimately appear as both a kill and a live problem (same vital point,
-// opposite side of the board) — every other shape appears exactly once.
+// All 50 positions are real diagrams from public-domain classical collections —
+// Xuanxuan Qijing (玄玄棋經, 1347), Gokyo Shumyo (五子集妙用, 1822), and Igo Hatsuyoron
+// (囲碁発陽論, 1713) — transcribed into SGF (no solutions included) by Vit Brunner for
+// tsumego.tasuki.org and mirrored at github.com/akitaonrails/frank_go. None of this is
+// a synthetic/generated shape: every stone here is exactly where the original book put
+// it, just translated/rotated to fit a 9x9 local board and, where the source had white
+// moving first, color-swapped so the player always plays black (the shape itself is
+// unchanged — color is arbitrary in Go).
+//
+// Each diagram was mined with a script (not shipped) that: (1) kept only problems whose
+// stones anchor to a board edge and fit a 9x9 local window, (2) computed the actual
+// contested empty region via flood-fill (the pocket of empty points touching both
+// colors — not just "everything inside the bounding box"), (3) ran it through
+// tsumegoSolver's real AND-OR search for both a kill and a live framing, and kept only
+// framings the solver actually proved, and (4) rejected any pair of selected diagrams
+// whose stones overlap more than 75% (the classical collections reuse base shapes with
+// small variations throughout — this keeps the final 50 visually distinct). No goal
+// label was taken on faith from a section heading; the solver decided every one.
 export type Point = [number, number]
 export type Color = 1 | 2
 export type Goal = 'kill' | 'live'
@@ -27,105 +33,68 @@ export interface TsumegoProblem {
   source: string
 }
 
-function neighborsIn9([r, c]: Point): Point[] {
-  const ns: Point[] = []
-  if (r > 0) ns.push([r - 1, c])
-  if (r < 8) ns.push([r + 1, c])
-  if (c > 0) ns.push([r, c - 1])
-  if (c < 8) ns.push([r, c + 1])
-  return ns
-}
-// 8방향(대각 포함) 이웃. 벽(wall) 고리를 계산할 때만 쓴다 — 꺾인 궁도의 바깥쪽
-// 모서리에서 사목(orthogonal) 팽창만 쓰면 벽이 대각선으로만 이어져 끊어지는 경우가
-// 생기기 때문에, 대각까지 포함해 팽창시켜 벽이 항상 사목으로 하나의 무리가 되게 한다.
-function neighborsCheb([r, c]: Point): Point[] {
-  const ns: Point[] = []
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
-      if (!dr && !dc) continue
-      const nr = r + dr, nc = c + dc
-      if (nr >= 0 && nr < 9 && nc >= 0 && nc < 9) ns.push([nr, nc])
-    }
-  return ns
-}
-const key = ([r, c]: Point) => r * 9 + c
-
-// Build a fully-enclosed local shape from an eye-space polyomino: the defender's wall
-// is every in-bound point touching (incl. diagonally, for connectivity) the eye-space,
-// and the attacker's sealing ring is every in-bound point orthogonally touching that
-// wall (so the wall has zero liberties outside the eye-space — it can never "escape",
-// only the eye-space fight matters).
-function buildEnclosure(eyeSpace: Point[], defenderColor: Color): { black: Point[]; white: Point[]; region: Point[] } {
-  const eyeSet = new Set(eyeSpace.map(key))
-  const wallMap = new Map<number, Point>()
-  for (const p of eyeSpace) for (const n of neighborsCheb(p)) {
-    const k = key(n)
-    if (!eyeSet.has(k)) wallMap.set(k, n)
-  }
-  const wall = [...wallMap.values()]
-  const wallSet = new Set(wall.map(key))
-  const outerMap = new Map<number, Point>()
-  for (const p of wall) for (const n of neighborsIn9(p)) {
-    const k = key(n)
-    if (!eyeSet.has(k) && !wallSet.has(k)) outerMap.set(k, n)
-  }
-  const outer = [...outerMap.values()]
-  return {
-    black: defenderColor === 1 ? wall : outer,
-    white: defenderColor === 1 ? outer : wall,
-    region: eyeSpace,
-  }
-}
-
-interface ShapeDef {
+interface RawProblem {
+  number: number
   title: string
   difficulty: TsumegoProblem['difficulty']
   goal: Goal
-  eyeSpace: Point[]
-  n: number
-  dupe?: boolean // give this one a second orientation elsewhere on the board
+  black: Point[]
+  white: Point[]
+  region: Point[]
+  source: string
 }
 
-const defenderColorOf = (goal: Goal): Color => (goal === 'kill' ? 2 : 1)
-
-const SHAPES: ShapeDef[] = [
-  // --- 4칸 (중급) ---
-  { title: '일자 사궁', difficulty: '중급', goal: 'live', n: 4, eyeSpace: [[0, 0], [1, 0], [2, 0], [3, 0]], dupe: true },
-  { title: '꺾인 사궁', difficulty: '중급', goal: 'kill', n: 4, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0]] },
-  { title: '꺾인 사궁 — 선수로 살기', difficulty: '중급', goal: 'live', n: 4, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0]] },
-  { title: '갈고리 사궁', difficulty: '중급', goal: 'kill', n: 4, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0]] },
-  { title: '갈고리 사궁 — 선수로 살기', difficulty: '중급', goal: 'live', n: 4, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0]] },
-  { title: '네모 사궁', difficulty: '중급', goal: 'kill', n: 4, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1]] },
-
-  // --- 5칸 (중상급) ---
-  { title: '일자 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]], dupe: true },
-  { title: '긴 꺾인 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [3, 0]], dupe: true },
-  { title: '갈고리 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0], [3, 0]], dupe: true },
-  { title: '십자 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1]], dupe: true },
-  { title: '뭉친 오궁', difficulty: '중상급', goal: 'kill', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0]] },
-  { title: '뭉친 오궁 — 선수로 살기', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0]] },
-  { title: 'ㄴ자 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]], dupe: true },
-  { title: '지그재그 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [2, 1]], dupe: true },
-
-  // --- 6칸 (상급) ---
-  { title: '일자 육궁', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]], dupe: true },
-  { title: '꺾인 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [3, 0], [4, 0]], dupe: true },
-  { title: '갈고리 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0], [3, 0], [4, 0]], dupe: true },
-  { title: '갈고리 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [2, 0], [2, 1], [3, 0], [4, 0]], dupe: true },
-  { title: '십자형 육궁', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1], [3, 1]], dupe: true },
-  { title: '뭉친 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [3, 0]], dupe: true },
-  { title: '꺾인 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0], [3, 0]], dupe: true },
-  { title: '갈고리 육궁 3', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [2, 1], [3, 0]], dupe: true },
-  { title: '꺾인 육궁 3', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [3, 0], [3, 1]], dupe: true },
-  { title: '뭉친 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1], [3, 0]], dupe: true },
-  { title: '갈고리 육궁 4', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [1, 2], [2, 0], [3, 0]], dupe: true },
-  { title: '계단형 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [2, 1]] },
-  { title: '지그재그 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [1, 2], [2, 1], [3, 1]] },
-  { title: '계단형 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1], [2, 2]] },
-  { title: '뭉친 육궁 3', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [2, 0]] },
-  { title: '직사각형 육궁', difficulty: '상급', goal: 'kill', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]] },
-  { title: '직사각형 육궁 — 선수로 살기', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]] },
-  { title: '비정형 육궁', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0]] },
+const REAL_PROBLEMS_RAW: RawProblem[] = [
+  { number: 1, title: "Xuanxuan Qijing 272번", difficulty: '중상급', goal: 'kill', black: [[4,0],[2,5],[1,5],[0,5],[2,4],[3,2],[5,1],[2,3],[3,1]], white: [[2,2],[3,0],[2,1],[1,3],[1,4],[2,0]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,2],[1,1],[1,0]], source: "Xuanxuan Qijing(1347) 원전 272번 실제 수록 문제(좌표 변환)" },
+  { number: 2, title: "Xuanxuan Qijing 59번", difficulty: '중급', goal: 'kill', black: [[2,6],[3,4],[4,3],[4,0],[1,2],[4,1],[1,5],[2,1],[4,2],[2,4],[0,4],[2,3]], white: [[3,3],[2,2],[3,0],[1,1],[3,2],[1,4],[3,1],[1,3]], region: [[0,0],[0,1],[0,2],[0,3],[1,0],[2,0]], source: "Xuanxuan Qijing(1347) 원전 59번 실제 수록 문제(좌표 변환)" },
+  { number: 3, title: "Gokyo Shumyo 3-69번", difficulty: '중상급', goal: 'kill', black: [[2,5],[3,1],[1,6],[3,0],[0,6],[2,3],[4,2],[1,4],[2,2]], white: [[2,1],[1,2],[0,4],[0,5],[1,1]], region: [[0,0],[0,1],[0,2],[0,3],[1,3],[1,0],[2,0],[1,5]], source: "Gokyo Shumyo(1822) 원전 3-69번 실제 수록 문제(좌표 변환)" },
+  { number: 4, title: "Xuanxuan Qijing 311번", difficulty: '중상급', goal: 'kill', black: [[6,0],[2,4],[0,6],[3,3],[4,1],[6,1],[3,2],[1,4],[5,1],[0,4],[3,1]], white: [[2,3],[2,2],[1,3],[2,1],[0,3]], region: [[0,0],[0,1],[0,2],[1,2],[1,1],[1,0],[2,0],[3,0],[4,0],[5,0]], source: "Xuanxuan Qijing(1347) 원전 311번 실제 수록 문제(좌표 변환)" },
+  { number: 5, title: "Gokyo Shumyo 2-25번", difficulty: '중급', goal: 'kill', black: [[4,0],[2,3],[1,5],[4,2],[3,2],[4,1],[1,3],[2,1],[0,3]], white: [[3,0],[1,2],[2,0],[0,2],[2,2],[3,1]], region: [[0,0],[0,1],[1,1],[1,0]], source: "Gokyo Shumyo(1822) 원전 2-25번 실제 수록 문제(좌표 변환)" },
+  { number: 6, title: "Xuanxuan Qijing 305번", difficulty: '중상급', goal: 'kill', black: [[2,4],[2,3],[3,0],[1,5],[0,5],[2,2],[3,1],[0,7]], white: [[0,4],[1,1],[1,2],[1,3]], region: [[0,0],[0,1],[0,2],[0,3],[1,0],[2,0],[2,1],[1,4]], source: "Xuanxuan Qijing(1347) 원전 305번 실제 수록 문제(좌표 변환)" },
+  { number: 7, title: "Gokyo Shumyo 2-31번", difficulty: '중급', goal: 'kill', black: [[1,6],[2,4],[4,0],[2,3],[0,5],[3,2],[1,4],[5,1],[3,1],[2,1]], white: [[1,2],[1,1],[2,2],[0,4],[1,3],[0,3]], region: [[0,0],[0,1],[0,2],[1,0],[2,0],[3,0]], source: "Gokyo Shumyo(1822) 원전 2-31번 실제 수록 문제(좌표 변환)" },
+  { number: 8, title: "Xuanxuan Qijing 21번", difficulty: '중급', goal: 'kill', black: [[1,6],[2,4],[2,3],[3,0],[0,5],[1,4],[2,2],[3,1],[0,7]], white: [[0,0],[0,3],[0,4],[1,3],[1,0]], region: [[0,1],[0,2],[1,2],[1,1],[2,1],[2,0]], source: "Xuanxuan Qijing(1347) 원전 21번 실제 수록 문제(좌표 변환)" },
+  { number: 9, title: "Xuanxuan Qijing 44번", difficulty: '중급', goal: 'kill', black: [[4,0],[2,3],[0,5],[3,2],[5,1],[3,1],[1,3],[0,3]], white: [[0,0],[3,0],[1,2],[2,0],[2,2]], region: [[0,1],[0,2],[1,1],[1,0],[2,1]], source: "Xuanxuan Qijing(1347) 원전 44번 실제 수록 문제(좌표 변환)" },
+  { number: 10, title: "Gokyo Shumyo 2-55번", difficulty: '중급', goal: 'kill', black: [[0,6],[4,0],[4,2],[2,2],[0,4],[1,2],[3,1],[0,3]], white: [[2,0],[0,1],[0,2],[2,1]], region: [[0,0],[1,0],[1,1],[3,0]], source: "Gokyo Shumyo(1822) 원전 2-55번 실제 수록 문제(좌표 변환)" },
+  { number: 11, title: "Xuanxuan Qijing 41번", difficulty: '중급', goal: 'kill', black: [[5,0],[3,3],[7,0],[3,1],[1,5],[0,5],[1,1],[1,4],[2,2],[5,1],[4,1],[0,7],[1,3]], white: [[4,0],[3,0],[1,2],[2,0],[0,2],[0,4],[2,1],[0,3]], region: [[0,0],[0,1],[1,0]], source: "Xuanxuan Qijing(1347) 원전 41번 실제 수록 문제(좌표 변환)" },
+  { number: 12, title: "Gokyo Shumyo 1-64번", difficulty: '중급', goal: 'live', black: [[1,5],[2,3],[0,5],[2,2],[1,1],[0,1],[1,3]], white: [[3,2],[2,5],[1,0],[2,4],[0,0],[2,1],[2,7],[1,6],[0,6],[2,0],[3,3]], region: [[0,2],[0,3],[0,4],[1,4],[1,2]], source: "Gokyo Shumyo(1822) 원전 1-64번 실제 수록 문제(좌표 변환)" },
+  { number: 13, title: "Gokyo Shumyo 1-19번", difficulty: '중급', goal: 'live', black: [[1,1],[0,3],[1,4],[2,2],[1,3],[1,0]], white: [[2,4],[2,3],[2,0],[0,2],[1,5],[0,5],[2,5],[3,2],[0,4],[3,1]], region: [[0,0],[0,1],[1,2],[2,1]], source: "Gokyo Shumyo(1822) 원전 1-19번 실제 수록 문제(좌표 변환)" },
+  { number: 14, title: "Xuanxuan Qijing 204번", difficulty: '중상급', goal: 'live', black: [[1,3],[2,1],[2,2],[1,0]], white: [[2,4],[0,6],[2,3],[3,0],[2,0],[2,6],[1,5],[3,2],[3,1]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,4],[1,2],[1,1]], source: "Xuanxuan Qijing(1347) 원전 204번 실제 수록 문제(좌표 변환)" },
+  { number: 15, title: "Gokyo Shumyo 3-39번", difficulty: '상급', goal: 'live', black: [[3,2],[2,2],[1,1],[0,1],[3,1],[3,0]], white: [[1,4],[1,0],[2,1],[1,2],[2,0],[0,2]], region: [[0,0],[0,3],[0,4],[0,5],[1,5],[2,5],[2,4],[2,3],[3,3],[4,3],[4,4],[4,5],[4,2],[4,1],[4,0],[3,4],[3,5],[1,3]], source: "Gokyo Shumyo(1822) 원전 3-39번 실제 수록 문제(좌표 변환)" },
+  { number: 16, title: "Gokyo Shumyo 3-72번", difficulty: '상급', goal: 'live', black: [[0,0],[1,3],[2,1],[0,3],[2,2]], white: [[0,1],[2,4],[3,1],[2,3],[3,2],[1,4],[0,4]], region: [[0,2],[1,2],[1,1],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[3,5],[2,5],[1,5],[0,5],[3,4],[3,3]], source: "Gokyo Shumyo(1822) 원전 3-72번 실제 수록 문제(좌표 변환)" },
+  { number: 17, title: "Xuanxuan Qijing 130번", difficulty: '상급', goal: 'live', black: [[1,7],[2,5],[2,4],[2,1],[0,6],[1,5],[2,3],[2,2],[1,1]], white: [[0,1],[0,0],[1,3],[1,2],[0,5],[1,4]], region: [[0,7],[0,8],[1,8],[2,8],[2,7],[2,6],[3,6],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],[2,0],[1,0],[1,6],[3,7],[3,8]], source: "Xuanxuan Qijing(1347) 원전 130번 실제 수록 문제(좌표 변환)" },
+  { number: 18, title: "Xuanxuan Qijing 248번", difficulty: '상급', goal: 'live', black: [[1,0],[1,1],[0,1]], white: [[3,1],[1,3],[3,3]], region: [[0,2],[0,3],[0,4],[1,4],[2,4],[2,3],[2,2],[2,1],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4],[3,2],[3,4],[1,2]], source: "Xuanxuan Qijing(1347) 원전 248번 실제 수록 문제(좌표 변환)" },
+  { number: 19, title: "Xuanxuan Qijing 209번", difficulty: '상급', goal: 'live', black: [[2,2],[2,3],[3,2],[3,3]], white: [[1,0],[1,1],[0,1]], region: [[0,2],[0,3],[0,4],[1,4],[2,4],[3,4],[4,4],[4,3],[4,2],[4,1],[4,0],[3,0],[2,0],[2,1],[3,1],[1,3],[1,2]], source: "Xuanxuan Qijing(1347) 원전 209번 실제 수록 문제(좌표 변환)" },
+  { number: 20, title: "Gokyo Shumyo 2-7번", difficulty: '상급', goal: 'live', black: [[2,4],[2,3],[2,0],[1,5],[1,1],[2,2],[2,1]], white: [[0,0],[1,2],[0,1],[1,3],[1,0]], region: [[0,2],[0,3],[0,4],[0,5],[0,6],[1,6],[2,6],[2,5],[3,5],[3,4],[3,3],[3,2],[3,1],[3,0],[3,6],[1,4]], source: "Gokyo Shumyo(1822) 원전 2-7번 실제 수록 문제(좌표 변환)" },
+  { number: 21, title: "Gokyo Shumyo 3-6번", difficulty: '상급', goal: 'live', black: [[2,2],[3,0],[2,4],[1,4],[2,3],[3,1]], white: [[1,2],[2,1],[1,3],[0,1],[2,0]], region: [[0,2],[0,3],[0,4],[0,5],[1,5],[2,5],[3,5],[3,4],[3,3],[3,2],[4,2],[4,1],[4,0],[4,3],[4,4],[4,5]], source: "Gokyo Shumyo(1822) 원전 3-6번 실제 수록 문제(좌표 변환)" },
+  { number: 22, title: "Gokyo Shumyo 4-3번", difficulty: '상급', goal: 'live', black: [[2,3],[0,2],[2,2],[0,4],[1,3],[2,1],[1,0]], white: [[3,0],[1,2],[2,0],[1,1],[0,1],[3,1],[0,3]], region: [[0,0],[0,5],[1,5],[1,4],[2,4],[3,4],[3,5],[4,5],[3,3],[3,2],[4,2],[4,1],[4,0],[4,3],[4,4],[2,5]], source: "Gokyo Shumyo(1822) 원전 4-3번 실제 수록 문제(좌표 변환)" },
+  { number: 23, title: "Xuanxuan Qijing 75번", difficulty: '상급', goal: 'live', black: [[3,4],[4,1],[4,0],[1,6],[0,6],[3,6],[2,5],[3,3],[4,2]], white: [[1,0],[3,1],[1,2],[1,4]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,5],[1,3],[2,3],[2,4],[2,2],[2,1],[2,0],[3,0],[3,2],[1,1]], source: "Xuanxuan Qijing(1347) 원전 75번 실제 수록 문제(좌표 변환)" },
+  { number: 24, title: "Xuanxuan Qijing 325번", difficulty: '상급', goal: 'live', black: [[3,4],[4,3],[4,0],[2,5],[1,5],[5,2],[0,5],[4,1]], white: [[1,4],[2,2],[1,0],[3,1]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,3],[2,3],[2,4],[3,3],[3,2],[4,2],[1,2],[1,1],[2,1],[2,0],[3,0]], source: "Xuanxuan Qijing(1347) 원전 325번 실제 수록 문제(좌표 변환)" },
+  { number: 25, title: "Xuanxuan Qijing 105번", difficulty: '상급', goal: 'live', black: [[3,5],[4,4],[4,1],[4,2],[4,0],[4,6],[4,3],[2,5],[1,5],[0,5],[5,5]], white: [[1,3],[3,3],[2,4],[3,2],[2,1]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[1,2],[2,2],[2,3],[1,1],[1,0],[2,0],[3,0],[3,1],[3,4]], source: "Xuanxuan Qijing(1347) 원전 105번 실제 수록 문제(좌표 변환)" },
+  { number: 26, title: "Xuanxuan Qijing 196번", difficulty: '상급', goal: 'live', black: [[6,4],[1,0],[7,2],[5,5],[2,7],[3,5],[0,1],[0,7],[6,0],[4,0],[7,1],[2,0],[2,6],[4,2],[4,5],[1,1],[1,7],[7,3],[5,0],[3,0],[2,5]], white: [[4,4],[5,1],[3,4],[4,1],[3,1],[1,6],[5,3],[1,2],[0,2],[3,3],[1,5],[2,4],[2,1]], region: [[0,3],[0,4],[0,5],[0,6],[1,4],[1,3],[2,3],[2,2],[3,2],[4,3],[5,2],[6,2],[6,3],[6,1],[5,4]], source: "Xuanxuan Qijing(1347) 원전 196번 실제 수록 문제(좌표 변환)" },
+  { number: 27, title: "Xuanxuan Qijing 277번", difficulty: '상급', goal: 'live', black: [[3,0],[1,1],[2,0],[0,1]], white: [[2,2],[2,1],[1,0],[0,0],[1,3],[0,3]], region: [[0,2],[1,2],[0,4],[1,4],[2,4],[2,3],[3,3],[3,2],[3,1],[4,1],[4,0],[4,2],[4,3],[4,4],[3,4]], source: "Xuanxuan Qijing(1347) 원전 277번 실제 수록 문제(좌표 변환)" },
+  { number: 28, title: "Xuanxuan Qijing 336번", difficulty: '상급', goal: 'live', black: [[3,4],[4,3],[5,0],[5,1],[5,2],[2,4],[1,4],[0,4],[5,4]], white: [[3,3],[1,2],[4,2],[4,1],[2,0]], region: [[0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[2,2],[2,1],[3,1],[3,0],[4,0],[3,2],[1,1],[1,0]], source: "Xuanxuan Qijing(1347) 원전 336번 실제 수록 문제(좌표 변환)" },
+  { number: 29, title: "Gokyo Shumyo 3-45번", difficulty: '상급', goal: 'live', black: [[3,4],[4,1],[4,2],[4,0],[1,6],[3,0],[3,6],[2,5],[3,3],[0,5]], white: [[1,1],[2,0],[2,3],[3,1],[0,3]], region: [[0,0],[0,1],[0,2],[1,2],[1,3],[1,4],[1,5],[2,4],[0,4],[2,2],[2,1],[3,2],[1,0]], source: "Gokyo Shumyo(1822) 원전 3-45번 실제 수록 문제(좌표 변환)" },
+  { number: 30, title: "Xuanxuan Qijing 86번", difficulty: '상급', goal: 'live', black: [[3,4],[4,3],[5,0],[3,0],[2,5],[1,5],[0,5],[4,2],[4,1]], white: [[1,0],[2,2],[3,2],[1,4],[2,0]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,3],[2,3],[2,4],[3,3],[1,2],[1,1],[2,1],[3,1]], source: "Xuanxuan Qijing(1347) 원전 86번 실제 수록 문제(좌표 변환)" },
+  { number: 31, title: "Xuanxuan Qijing 101번", difficulty: '상급', goal: 'live', black: [[1,0],[0,0],[4,3],[4,4],[4,0],[3,6],[3,5],[4,2],[2,7],[1,7],[3,1],[0,7],[2,0]], white: [[1,6],[3,3],[2,5],[0,2],[2,1],[1,1],[3,2],[1,4]], region: [[0,1],[0,3],[0,4],[0,5],[0,6],[1,5],[1,3],[1,2],[2,2],[2,3],[2,4],[3,4],[2,6]], source: "Xuanxuan Qijing(1347) 원전 101번 실제 수록 문제(좌표 변환)" },
+  { number: 32, title: "Xuanxuan Qijing 295번", difficulty: '상급', goal: 'live', black: [[5,5],[6,1],[4,5],[6,4],[3,5],[2,1],[2,0],[7,0],[7,3],[1,3],[5,0],[4,0],[3,0],[7,2],[2,5],[1,5],[0,5],[1,1]], white: [[2,4],[1,4],[5,1],[4,1],[5,4],[3,1],[4,4],[3,4],[6,3],[2,2],[1,2],[6,2]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,0],[2,3],[3,3],[3,2],[4,2],[5,2],[5,3],[4,3]], source: "Xuanxuan Qijing(1347) 원전 295번 실제 수록 문제(좌표 변환)" },
+  { number: 33, title: "Xuanxuan Qijing 328번", difficulty: '상급', goal: 'live', black: [[6,4],[1,0],[1,6],[5,5],[0,1],[6,0],[6,6],[4,0],[4,6],[5,1],[2,0],[2,6],[0,0],[0,6],[6,2],[5,3],[3,0],[3,6],[0,5]], white: [[4,5],[3,5],[4,1],[3,1],[4,4],[4,3],[1,3],[2,5],[1,5],[2,1],[4,2],[1,1]], region: [[0,2],[0,3],[0,4],[1,4],[2,4],[2,3],[2,2],[3,2],[3,3],[3,4],[1,2],[5,2],[5,4]], source: "Xuanxuan Qijing(1347) 원전 328번 실제 수록 문제(좌표 변환)" },
+  { number: 34, title: "Xuanxuan Qijing 335번", difficulty: '상급', goal: 'live', black: [[3,4],[4,3],[4,0],[1,5],[0,5],[4,2],[2,4],[4,1]], white: [[1,0],[3,3],[2,3],[3,1],[1,3]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[1,2],[2,2],[2,1],[2,0],[3,0],[3,2],[1,1]], source: "Xuanxuan Qijing(1347) 원전 335번 실제 수록 문제(좌표 변환)" },
+  { number: 35, title: "Xuanxuan Qijing 154번", difficulty: '상급', goal: 'live', black: [[0,3],[1,0],[5,3],[5,4],[3,7],[5,0],[4,0],[4,6],[3,0],[0,2],[4,5],[5,2],[0,1],[5,1],[2,7],[1,7],[0,7],[2,0]], white: [[2,6],[3,4],[1,6],[0,6],[3,6],[2,1],[0,5],[4,2],[4,1],[2,3],[3,1],[4,4],[1,3]], region: [[0,4],[1,4],[1,5],[2,5],[3,5],[2,4],[1,1],[1,2],[2,2],[3,2],[3,3],[4,3]], source: "Xuanxuan Qijing(1347) 원전 154번 실제 수록 문제(좌표 변환)" },
+  { number: 36, title: "Xuanxuan Qijing 329번", difficulty: '상급', goal: 'live', black: [[2,7],[5,1],[2,3],[5,0],[1,6],[2,2],[4,3],[2,5],[3,3],[5,2],[0,5],[2,4]], white: [[4,1],[1,3],[1,4],[1,2],[1,5],[3,2],[2,1]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,1],[1,0],[2,0],[3,0],[3,1],[4,0],[4,2]], source: "Xuanxuan Qijing(1347) 원전 329번 실제 수록 문제(좌표 변환)" },
+  { number: 37, title: "Igo Hatsuyoron 54번", difficulty: '상급', goal: 'live', black: [[2,6],[3,3],[5,0],[5,1],[3,1],[1,5],[3,4],[3,5],[0,6],[4,2],[3,2],[1,6]], white: [[4,0],[2,3],[4,1],[2,4],[2,1],[0,5],[1,2],[2,5]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[1,3],[1,1],[1,0],[2,0],[3,0],[2,2]], source: "Igo Hatsuyoron(1713) 원전 54번 실제 수록 문제(좌표 변환)" },
+  { number: 38, title: "Xuanxuan Qijing 237번", difficulty: '중상급', goal: 'live', black: [[1,0],[2,2],[2,4],[3,2],[1,4],[0,4]], white: [[3,4],[4,3],[3,0],[1,2],[2,5],[4,5],[1,5],[0,5],[4,2],[4,1]], region: [[0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[3,3],[1,1],[2,1],[2,0],[3,1]], source: "Xuanxuan Qijing(1347) 원전 237번 실제 수록 문제(좌표 변환)" },
+  { number: 39, title: "Xuanxuan Qijing 326번", difficulty: '중상급', goal: 'live', black: [[1,6],[2,4],[3,3],[3,0],[0,5],[4,2],[1,4],[4,1],[3,4]], white: [[1,0],[3,2],[2,2],[0,3]], region: [[0,0],[0,1],[0,2],[1,2],[1,3],[2,3],[1,1],[2,1],[2,0],[3,1],[0,4]], source: "Xuanxuan Qijing(1347) 원전 326번 실제 수록 문제(좌표 변환)" },
+  { number: 40, title: "Gokyo Shumyo 2-37번", difficulty: '중상급', goal: 'live', black: [[2,5],[4,4],[4,1],[2,4],[4,0],[1,6],[4,2],[4,3],[0,5],[3,2],[3,5],[0,4]], white: [[3,4],[3,1],[2,1],[0,3],[3,3],[2,3],[1,4],[2,2]], region: [[0,0],[0,1],[0,2],[1,2],[1,3],[1,1],[1,0],[2,0],[3,0],[1,5]], source: "Gokyo Shumyo(1822) 원전 2-37번 실제 수록 문제(좌표 변환)" },
+  { number: 41, title: "Xuanxuan Qijing 4번", difficulty: '중상급', goal: 'live', black: [[2,7],[3,1],[1,6],[3,0],[0,6],[2,5],[3,3],[2,4],[3,2]], white: [[0,1],[2,3],[2,2],[1,4],[1,5],[2,1]], region: [[0,0],[1,0],[1,1],[1,2],[1,3],[0,3],[0,4],[0,5],[0,2],[2,0]], source: "Xuanxuan Qijing(1347) 원전 4번 실제 수록 문제(좌표 변환)" },
+  { number: 42, title: "Xuanxuan Qijing 111번", difficulty: '중상급', goal: 'live', black: [[3,4],[3,1],[2,6],[1,6],[3,0],[0,6],[2,5],[3,3],[3,2]], white: [[0,4],[1,1],[1,0],[2,3],[1,5],[2,4],[2,1]], region: [[0,0],[0,1],[0,2],[0,3],[1,3],[1,4],[1,2],[2,2],[0,5],[2,0]], source: "Xuanxuan Qijing(1347) 원전 111번 실제 수록 문제(좌표 변환)" },
+  { number: 43, title: "Xuanxuan Qijing 144번", difficulty: '중상급', goal: 'live', black: [[2,6],[1,0],[1,6],[5,3],[5,0],[3,3],[3,0],[4,5],[0,5],[3,5],[4,2],[5,5],[4,1],[5,4],[2,0]], white: [[3,4],[4,3],[2,5],[2,1],[1,1],[2,4],[3,2],[3,1],[4,4],[1,3]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[1,5],[1,2],[2,2],[2,3]], source: "Xuanxuan Qijing(1347) 원전 144번 실제 수록 문제(좌표 변환)" },
+  { number: 44, title: "Xuanxuan Qijing 279번", difficulty: '중상급', goal: 'live', black: [[3,5],[4,4],[2,0],[5,1],[3,1],[2,6],[1,6],[0,6],[4,3],[2,5],[4,2],[5,5],[2,1]], white: [[1,1],[3,4],[1,0],[1,2],[3,3],[1,5],[3,2],[1,4]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,3],[2,3],[2,4],[2,2]], source: "Xuanxuan Qijing(1347) 원전 279번 실제 수록 문제(좌표 변환)" },
+  { number: 45, title: "Xuanxuan Qijing 301번", difficulty: '중상급', goal: 'live', black: [[0,4],[3,4],[4,1],[4,0],[4,3],[4,2],[2,4],[4,5],[1,4]], white: [[1,1],[2,3],[1,3],[3,0],[3,3],[3,2]], region: [[0,0],[0,1],[0,2],[0,3],[1,2],[2,2],[2,1],[2,0],[3,1],[1,0]], source: "Xuanxuan Qijing(1347) 원전 301번 실제 수록 문제(좌표 변환)" },
+  { number: 46, title: "Xuanxuan Qijing 334번", difficulty: '중상급', goal: 'live', black: [[3,5],[4,4],[1,0],[3,1],[2,6],[4,6],[1,6],[0,6],[4,3],[4,2],[2,1]], white: [[1,1],[0,1],[2,3],[1,3],[2,5],[3,3],[1,5],[0,5]], region: [[0,0],[0,2],[0,3],[0,4],[1,4],[2,4],[3,4],[1,2],[2,2],[3,2]], source: "Xuanxuan Qijing(1347) 원전 334번 실제 수록 문제(좌표 변환)" },
+  { number: 47, title: "Xuanxuan Qijing 10번", difficulty: '중상급', goal: 'live', black: [[2,7],[1,7],[5,4],[0,7],[2,0],[5,7],[4,7],[3,1],[3,7],[2,6],[5,3],[6,6],[4,3],[1,2],[3,3],[6,5],[3,2],[2,1]], white: [[1,1],[4,4],[3,4],[1,0],[2,3],[4,6],[1,6],[2,2],[0,6],[3,6],[2,5],[5,5],[1,4]], region: [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,5],[1,3],[5,6]], source: "Xuanxuan Qijing(1347) 원전 10번 실제 수록 문제(좌표 변환)" },
+  { number: 48, title: "Xuanxuan Qijing 91번", difficulty: '중상급', goal: 'live', black: [[2,7],[3,5],[1,7],[0,7],[2,0],[3,4],[3,7],[2,2],[3,6],[3,3],[2,1]], white: [[0,4],[1,1],[2,6],[1,6],[0,6],[1,2],[2,5],[0,5],[2,4]], region: [[0,0],[0,1],[0,2],[0,3],[1,3],[1,4],[1,5],[2,3],[1,0]], source: "Xuanxuan Qijing(1347) 원전 91번 실제 수록 문제(좌표 변환)" },
+  { number: 49, title: "Xuanxuan Qijing 114번", difficulty: '중상급', goal: 'live', black: [[5,4],[0,0],[3,7],[0,3],[4,2],[1,7],[5,3],[5,6],[0,2],[0,5],[4,1],[2,1],[2,7],[1,6],[5,5],[0,4],[0,1],[4,0],[4,6]], white: [[2,5],[4,4],[3,1],[1,3],[3,6],[1,2],[2,0],[2,6],[4,3],[1,5],[3,2],[4,5],[1,1]], region: [[1,0],[1,4],[2,4],[2,3],[2,2],[3,3],[3,4],[3,5],[3,0]], source: "Xuanxuan Qijing(1347) 원전 114번 실제 수록 문제(좌표 변환)" },
+  { number: 50, title: "Xuanxuan Qijing 188번", difficulty: '중상급', goal: 'live', black: [[1,1],[0,1],[4,4],[2,0],[5,1],[3,1],[2,6],[1,6],[3,0],[0,6],[3,6],[4,3],[4,2],[4,5]], white: [[1,0],[1,3],[2,2],[2,5],[3,3],[1,5],[2,4],[3,2],[2,1]], region: [[0,0],[0,2],[0,3],[0,4],[0,5],[1,4],[1,2],[3,4],[3,5]], source: "Xuanxuan Qijing(1347) 원전 188번 실제 수록 문제(좌표 변환)" },
 ]
 
 function rotate90([r, c]: Point): Point { return [c, 8 - r] }
@@ -137,24 +106,14 @@ function transform(p: Point, variant: number): Point {
 }
 function transformAll(points: Point[], variant: number): Point[] { return points.map((p) => transform(p, variant)) }
 
-interface Instance { shape: ShapeDef; variant: number }
-const instances: Instance[] = []
-for (const shape of SHAPES) {
-  instances.push({ shape, variant: 0 })
-  if (shape.dupe) instances.push({ shape, variant: 3 })
-}
-
-export const TSUMEGO_PROBLEMS: TsumegoProblem[] = instances.map(({ shape, variant }, i) => {
-  const defenderColor = defenderColorOf(shape.goal)
-  const base = buildEnclosure(shape.eyeSpace, defenderColor)
+// Spread the 50 real diagrams across all four corners / mirrors for visual variety
+// (rotation/reflection doesn't change a Go position's life-and-death status).
+export const TSUMEGO_PROBLEMS: TsumegoProblem[] = REAL_PROBLEMS_RAW.map((p, i) => {
+  const variant = i % 8
   return {
-    number: i + 1,
-    title: variant === 0 ? shape.title : `${shape.title} (반대쪽)`,
-    difficulty: shape.difficulty,
-    goal: shape.goal,
-    black: transformAll(base.black, variant),
-    white: transformAll(base.white, variant),
-    region: transformAll(base.region, variant),
-    source: `폴리오미노 전수 탐색 검증형 · ${shape.n}칸 궁도`,
+    ...p,
+    black: transformAll(p.black, variant),
+    white: transformAll(p.white, variant),
+    region: transformAll(p.region, variant),
   }
 })
