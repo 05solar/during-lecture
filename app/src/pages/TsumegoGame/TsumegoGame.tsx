@@ -137,7 +137,7 @@ export default function TsumegoGame() {
       if (isSettled(played.state, defenderColor, attackerColor, regionIdx, goalWantsSurvive)) {
         setState(played.state)
         setLastMove(move)
-        finish()
+        finish(played.state)
         return
       }
       const whiteMove = result.move
@@ -147,7 +147,7 @@ export default function TsumegoGame() {
       if (isSettled(afterWhite, defenderColor, attackerColor, regionIdx, goalWantsSurvive)) {
         setState(afterWhite)
         setLastMove(whiteIdx)
-        finish()
+        finish(afterWhite)
         return
       }
       setState(afterWhite)
@@ -169,9 +169,11 @@ export default function TsumegoGame() {
       )
     }
 
-    function finish() {
+    function finish(finalState: GoState) {
       setMode('analysis')
-      setAnalysisColor(1)
+      // 분석 모드 시작 색은 실제로 놓인 수순을 따라간다(항상 흑이 아니라, 마지막 수
+      // 다음에 실제로 둘 차례인 색).
+      setAnalysisColor(finalState.toMove)
       const score = Math.max(80, 240 - mistakes * 35)
       submitScore('tsumego', score)
       setMessage(`정답입니다. ${score}점을 기록했고 자유 분석 모드로 전환했습니다. 흑·백 모두 계속 착수할 수 있습니다.`)

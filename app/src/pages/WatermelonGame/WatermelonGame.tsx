@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import Matter from 'matter-js'
 import GamePage from '../../components/GamePage/GamePage'
 import { submitScore } from '../../lib/scoreStore'
-import { FRUITS, loadFruitSpriteSheet, SPRITE_CELL_SIZE, spriteCellFor } from './fruitSprites'
+import { FRUITS, loadFruitSpriteSheet, spriteCropFor } from './fruitSprites'
 import './WatermelonGame.css'
 
 const { Engine, Bodies, Composite, Events } = Matter
@@ -144,18 +144,23 @@ export default function WatermelonGame() {
       const f = FRUITS[tier]
       ctx.globalAlpha = ghost ? 0.4 : 1
       if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
-        const cell = spriteCellFor(tier)
+        const crop = spriteCropFor(tier)
         const d = f.r * 2.12
+        // 과일마다 비율이 다르므로(레몬은 가로로 넓고, 파인애플은 세로로 긺) 긴 변을
+        // d에 맞춰 비율을 유지한 채 그린다 — 정사각형으로 늘리지 않는다.
+        const scale = d / Math.max(crop.sw, crop.sh)
+        const dw = crop.sw * scale
+        const dh = crop.sh * scale
         ctx.drawImage(
           spriteSheet,
-          cell.x,
-          cell.y,
-          SPRITE_CELL_SIZE,
-          SPRITE_CELL_SIZE,
-          x - d / 2,
-          y - d / 2,
-          d,
-          d,
+          crop.sx,
+          crop.sy,
+          crop.sw,
+          crop.sh,
+          x - dw / 2,
+          y - dh / 2,
+          dw,
+          dh,
         )
       } else {
         ctx.beginPath()

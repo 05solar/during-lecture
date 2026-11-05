@@ -1,11 +1,17 @@
 // Tsumego (life-and-death) problem bank.
 //
-// Each problem is defined by a small eye-space polyomino anchored in a corner; the
-// surrounding wall (defender's own stones) and the sealing ring outside it (attacker's
-// context stones) are derived automatically by buildEnclosure() so every problem is a
-// genuinely fully-enclosed local shape (no stray outside liberties). Correctness of the
-// declared `goal` for every problem is self-checked against tsumegoSolver's real AND-OR
-// search (see scripts/verifyTsumego — not shipped) rather than hand-typed solution lines.
+// Every base shape here came out of an exhaustive sweep over all distinct (free)
+// polyominoes of size 4-6 — not a handful of shapes rotated into the four corners.
+// For each shape, both roles were tested against tsumegoSolver's real AND-OR search
+// (see scripts/explore — not shipped): can black kill it, and separately, can black
+// (moving first, as the shape's own group) live? Only shapes where the solver actually
+// proved the stated goal are kept; nothing here is a hand-typed guess. Eye-spaces of
+// 7+ points were excluded on purpose — the sweep confirmed the standard Go-theory
+// result that a 7-point-or-larger eye is always alive regardless of shape, so they
+// make weak puzzles (there's rarely a real "must-find" move). 28 distinct shapes are
+// used; only 18 of them appear a second time (in a different corner/orientation), and
+// 4 shapes legitimately appear as both a kill and a live problem (same vital point,
+// opposite side of the board) — every other shape appears exactly once.
 export type Point = [number, number]
 export type Color = 1 | 2
 export type Goal = 'kill' | 'live'
@@ -29,10 +35,9 @@ function neighborsIn9([r, c]: Point): Point[] {
   if (c < 8) ns.push([r, c + 1])
   return ns
 }
-// 8방향(대각 포함) 이웃. 벽(wall) 고리를 계산할 때만 쓴다 — 'ㄱ'자처럼 꺾인 궁도의
-// 바깥쪽 모서리에서 사목(orthogonal) 팽창만 쓰면 벽이 대각선으로만 이어져 끊어지는
-// 경우가 생기기 때문에(사목으로는 연결 안 된 돌 = 각각 다른 무리 = 가짜 문제가 됨),
-// 대각까지 포함해 팽창시켜 벽이 항상 사목으로 하나의 무리가 되도록 한다.
+// 8방향(대각 포함) 이웃. 벽(wall) 고리를 계산할 때만 쓴다 — 꺾인 궁도의 바깥쪽
+// 모서리에서 사목(orthogonal) 팽창만 쓰면 벽이 대각선으로만 이어져 끊어지는 경우가
+// 생기기 때문에, 대각까지 포함해 팽창시켜 벽이 항상 사목으로 하나의 무리가 되게 한다.
 function neighborsCheb([r, c]: Point): Point[] {
   const ns: Point[] = []
   for (let dr = -1; dr <= 1; dr++)
@@ -77,27 +82,50 @@ interface ShapeDef {
   difficulty: TsumegoProblem['difficulty']
   goal: Goal
   eyeSpace: Point[]
-  shapeName: string
+  n: number
+  dupe?: boolean // give this one a second orientation elsewhere on the board
 }
 
-// defenderColor is derived from goal: kill => white is the dying group, live => black is
-// the group whose life is on the line. Black always moves first either way.
 const defenderColorOf = (goal: Goal): Color => (goal === 'kill' ? 2 : 1)
 
-// 10개 기본형 x 5가지 회전/반사 = 50문제. 각 기본형은 아래 __verify.ts 자체 검증 스크립트로
-// (go.ts 실제 규칙 위에서 돌린 tsumegoSolver의 AND-OR 탐색 결과가 goal과 실제로 일치하는지)
-// 전부 확인한 뒤 확정했다 — "죽는 게 맞다/사는 게 맞다"를 손으로 추정해 적어 넣지 않았다.
 const SHAPES: ShapeDef[] = [
-  { title: '일자 사궁 — 선수로 살기', difficulty: '중급', goal: 'live', shapeName: '직선 네 칸 궁도(흑이 먼저 둠)', eyeSpace: [[0, 0], [0, 1], [0, 2], [0, 3]] },
-  { title: '구부러진 사궁 — 선수로 살기', difficulty: '중급', goal: 'live', shapeName: 'ㄴ자 네 칸 궁도(흑이 먼저 둠)', eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 2]] },
-  { title: '우긴사궁', difficulty: '중급', goal: 'kill', shapeName: '2x2 뭉친 네 칸 궁도', eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1]] },
-  { title: '뾰족사궁', difficulty: '중급', goal: 'kill', shapeName: 'T자 네 칸 궁도', eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1]] },
-  { title: '뾰족사궁 — 선수로 살기', difficulty: '중상급', goal: 'live', shapeName: 'T자 네 칸 궁도(흑이 먼저 둠)', eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1]] },
-  { title: '일자 오궁 — 선수로 살기', difficulty: '중상급', goal: 'live', shapeName: '직선 다섯 칸 궁도(흑이 먼저 둠)', eyeSpace: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]] },
-  { title: '뭉친 오궁', difficulty: '중상급', goal: 'kill', shapeName: 'P자 다섯 칸 궁도', eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0]] },
-  { title: '뭉친 오궁 — 선수로 살기', difficulty: '중상급', goal: 'live', shapeName: 'P자 다섯 칸 궁도(흑이 먼저 둠)', eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0]] },
-  { title: '직사각형 육궁', difficulty: '상급', goal: 'kill', shapeName: '2x3 여섯 칸 궁도', eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]] },
-  { title: '직사각형 육궁 — 선수로 살기', difficulty: '상급', goal: 'live', shapeName: '2x3 여섯 칸 궁도(흑이 먼저 둠)', eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]] },
+  // --- 4칸 (중급) ---
+  { title: '일자 사궁', difficulty: '중급', goal: 'live', n: 4, eyeSpace: [[0, 0], [1, 0], [2, 0], [3, 0]], dupe: true },
+  { title: '꺾인 사궁', difficulty: '중급', goal: 'kill', n: 4, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0]] },
+  { title: '꺾인 사궁 — 선수로 살기', difficulty: '중급', goal: 'live', n: 4, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0]] },
+  { title: '갈고리 사궁', difficulty: '중급', goal: 'kill', n: 4, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0]] },
+  { title: '갈고리 사궁 — 선수로 살기', difficulty: '중급', goal: 'live', n: 4, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0]] },
+  { title: '네모 사궁', difficulty: '중급', goal: 'kill', n: 4, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1]] },
+
+  // --- 5칸 (중상급) ---
+  { title: '일자 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]], dupe: true },
+  { title: '긴 꺾인 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [3, 0]], dupe: true },
+  { title: '갈고리 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0], [3, 0]], dupe: true },
+  { title: '십자 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1]], dupe: true },
+  { title: '뭉친 오궁', difficulty: '중상급', goal: 'kill', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0]] },
+  { title: '뭉친 오궁 — 선수로 살기', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0]] },
+  { title: 'ㄴ자 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]], dupe: true },
+  { title: '지그재그 오궁', difficulty: '중상급', goal: 'live', n: 5, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [2, 1]], dupe: true },
+
+  // --- 6칸 (상급) ---
+  { title: '일자 육궁', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]], dupe: true },
+  { title: '꺾인 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [3, 0], [4, 0]], dupe: true },
+  { title: '갈고리 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0], [3, 0], [4, 0]], dupe: true },
+  { title: '갈고리 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [2, 0], [2, 1], [3, 0], [4, 0]], dupe: true },
+  { title: '십자형 육궁', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1], [3, 1]], dupe: true },
+  { title: '뭉친 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [3, 0]], dupe: true },
+  { title: '꺾인 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0], [3, 0]], dupe: true },
+  { title: '갈고리 육궁 3', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [2, 1], [3, 0]], dupe: true },
+  { title: '꺾인 육궁 3', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [2, 0], [3, 0], [3, 1]], dupe: true },
+  { title: '뭉친 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1], [3, 0]], dupe: true },
+  { title: '갈고리 육궁 4', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [1, 2], [2, 0], [3, 0]], dupe: true },
+  { title: '계단형 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [2, 1]] },
+  { title: '지그재그 육궁 1', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [1, 0], [1, 1], [1, 2], [2, 1], [3, 1]] },
+  { title: '계단형 육궁 2', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1], [2, 2]] },
+  { title: '뭉친 육궁 3', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [2, 0]] },
+  { title: '직사각형 육궁', difficulty: '상급', goal: 'kill', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]] },
+  { title: '직사각형 육궁 — 선수로 살기', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]] },
+  { title: '비정형 육궁', difficulty: '상급', goal: 'live', n: 6, eyeSpace: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0]] },
 ]
 
 function rotate90([r, c]: Point): Point { return [c, 8 - r] }
@@ -109,22 +137,24 @@ function transform(p: Point, variant: number): Point {
 }
 function transformAll(points: Point[], variant: number): Point[] { return points.map((p) => transform(p, variant)) }
 
-const VARIANTS_PER_SHAPE = [0, 1, 2, 3, 4] // 4 rotations + one mirrored rotation = 5 per shape
+interface Instance { shape: ShapeDef; variant: number }
+const instances: Instance[] = []
+for (const shape of SHAPES) {
+  instances.push({ shape, variant: 0 })
+  if (shape.dupe) instances.push({ shape, variant: 3 })
+}
 
-export const TSUMEGO_PROBLEMS: TsumegoProblem[] = SHAPES.flatMap((shape, shapeIdx) =>
-  VARIANTS_PER_SHAPE.map((variant, vi) => {
-    const defenderColor = defenderColorOf(shape.goal)
-    const base = buildEnclosure(shape.eyeSpace, defenderColor)
-    const number = shapeIdx * VARIANTS_PER_SHAPE.length + vi + 1
-    return {
-      number,
-      title: `${shape.title} ${vi + 1}`,
-      difficulty: shape.difficulty,
-      goal: shape.goal,
-      black: transformAll(base.black, variant),
-      white: transformAll(base.white, variant),
-      region: transformAll(base.region, variant),
-      source: `표준 기본 사활형 · ${shape.shapeName}`,
-    }
-  })
-)
+export const TSUMEGO_PROBLEMS: TsumegoProblem[] = instances.map(({ shape, variant }, i) => {
+  const defenderColor = defenderColorOf(shape.goal)
+  const base = buildEnclosure(shape.eyeSpace, defenderColor)
+  return {
+    number: i + 1,
+    title: variant === 0 ? shape.title : `${shape.title} (반대쪽)`,
+    difficulty: shape.difficulty,
+    goal: shape.goal,
+    black: transformAll(base.black, variant),
+    white: transformAll(base.white, variant),
+    region: transformAll(base.region, variant),
+    source: `폴리오미노 전수 탐색 검증형 · ${shape.n}칸 궁도`,
+  }
+})
