@@ -1,14 +1,20 @@
-// TsumegoGame page: real Go rules + an AND-OR life-and-death solver (tsumegoSolver.ts).
+// TsumegoGame page: real Go rules + an AND-OR life-and-death solver (tsumegoSolver.ts),
+// played on a full 19x19 board (tsumegoGo.ts) so real diagrams can be used unmodified.
 // Every opponent reply — whether the player is right or wrong — is computed on the spot
 // from the actual board, not looked up from a scripted line.
+// Board rendering/sizing mirrors GoGame.tsx (wood tone, coordinate labels, responsive
+// disp scaling) so this plays like the site's other Go-based games.
 import { useEffect, useRef, useState } from 'react'
 import GamePage from '../../components/GamePage/GamePage'
 import { submitScore } from '../../lib/scoreStore'
-import { N, PASS, emptyState, play, toIdx, type Color, type GoState } from '../GoGame/go'
+import { N, PASS, emptyState, play, toIdx, type Color, type GoState } from './tsumegoGo'
 import { isSettled, solve } from './tsumegoSolver'
 import { TSUMEGO_PROBLEMS, type Point } from './tsumegoData'
 
-const PAD = 28, STEP = 40, SIZE = PAD * 2 + STEP * (N - 1)
+const PAD = 28, STEP = 34, W = PAD * 2 + STEP * (N - 1)
+const R = 15 // 돌 반지름
+const COLS = 'ABCDEFGHJKLMNOPQRST' // 바둑 좌표(I 생략), 19개
+const STARS: Point[] = [[3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15]]
 const other = (color: Color): Color => (color === 1 ? 2 : 1)
 const pointIndex = ([r, c]: Point) => toIdx(r, c)
 
@@ -38,6 +44,21 @@ export default function TsumegoGame() {
   const attackerColor: Color = other(defenderColor)
   const goalWantsSurvive = problem.goal === 'live'
 
+  // 보드 표시 크기(px). PC(넓은 화면)에서는 훨씬 크게, 모바일에서는 화면 폭에 맞춘다.
+  // 내부 좌표는 항상 W 기준이며, 렌더 시 배율(scale)만 키워 선명하게 확대한다.
+  // (GoGame.tsx와 동일한 반응형 방식)
+  const [disp, setDisp] = useState<number>(W)
+  useEffect(() => {
+    const calc = () => {
+      const vw = window.innerWidth
+      const cap = vw >= 760 ? 600 : 360
+      setDisp(Math.max(280, Math.min(vw - 48, cap)))
+    }
+    calc()
+    window.addEventListener('resize', calc)
+    return () => window.removeEventListener('resize', calc)
+  }, [])
+
   const reset = (next = problemIndex) => {
     setProblemIndex(next)
     setState(initial(next))
@@ -52,28 +73,39 @@ export default function TsumegoGame() {
     const canvas = canvasRef.current, ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
     const dpr = devicePixelRatio || 1
-    canvas.width = SIZE * dpr
-    canvas.height = SIZE * dpr
-    canvas.style.width = `${SIZE}px`
-    canvas.style.height = `${SIZE}px`
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const scale = disp / W
+    canvas.width = Math.round(disp * dpr)
+    canvas.height = Math.round(disp * dpr)
+    canvas.style.width = `${disp}px`
+    canvas.style.height = `${disp}px`
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0)
     ctx.fillStyle = '#dfb36f'
-    ctx.fillRect(0, 0, SIZE, SIZE)
+    ctx.fillRect(0, 0, W, W)
     ctx.strokeStyle = '#805326'
     ctx.lineWidth = 1
     for (let i = 0; i < N; i++) {
       const p = PAD + i * STEP
       ctx.beginPath()
-      ctx.moveTo(PAD, p); ctx.lineTo(SIZE - PAD, p)
-      ctx.moveTo(p, PAD); ctx.lineTo(p, SIZE - PAD)
+      ctx.moveTo(PAD, p); ctx.lineTo(W - PAD, p)
+      ctx.moveTo(p, PAD); ctx.lineTo(p, W - PAD)
       ctx.stroke()
     }
-    ;[[2, 2], [2, 6], [6, 2], [6, 6], [4, 4]].forEach(([r, c]) => {
-      ctx.fillStyle = '#5a3617'
+    // 좌표 (위: A~T(I 생략), 왼쪽: 19~1) — GoGame과 동일한 표기
+    ctx.fillStyle = 'rgba(90, 58, 30, 0.7)'
+    ctx.font = '700 9px system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    for (let i = 0; i < N; i++) {
+      const p = PAD + i * STEP
+      ctx.fillText(COLS[i], p, 11)
+      ctx.fillText(String(N - i), 11, p)
+    }
+    ctx.fillStyle = '#5a3617'
+    for (const [r, c] of STARS) {
       ctx.beginPath()
       ctx.arc(PAD + c * STEP, PAD + r * STEP, 3, 0, Math.PI * 2)
       ctx.fill()
-    })
+    }
     if (mode !== 'analysis') {
       ctx.fillStyle = 'rgba(79, 70, 229, 0.10)'
       for (const idx of regionIdx) {
@@ -86,13 +118,13 @@ export default function TsumegoGame() {
     }
     for (let i = 0; i < state.board.length; i++) {
       if (!state.board[i]) continue
-      const x = PAD + (i % N) * STEP, y = PAD + Math.floor(i / N) * STEP, rad = 17
-      const g = ctx.createRadialGradient(x - rad * 0.28, y - rad * 0.3, 1, x, y, rad)
+      const x = PAD + (i % N) * STEP, y = PAD + Math.floor(i / N) * STEP
+      const g = ctx.createRadialGradient(x - R * 0.28, y - R * 0.3, 1, x, y, R)
       if (state.board[i] === 1) { g.addColorStop(0, '#555'); g.addColorStop(1, '#111') }
       else { g.addColorStop(0, '#fff'); g.addColorStop(1, '#d1d1d1') }
       ctx.fillStyle = g
       ctx.beginPath()
-      ctx.arc(x, y, rad, 0, Math.PI * 2)
+      ctx.arc(x, y, R, 0, Math.PI * 2)
       ctx.fill()
       if (state.board[i] === 2) { ctx.strokeStyle = '#aaa'; ctx.stroke() }
     }
@@ -101,15 +133,15 @@ export default function TsumegoGame() {
       ctx.strokeStyle = state.board[lastMove] === 1 ? '#f9d75e' : '#c13530'
       ctx.lineWidth = 2.5
       ctx.beginPath()
-      ctx.arc(x, y, 6, 0, Math.PI * 2)
+      ctx.arc(x, y, R * 0.4, 0, Math.PI * 2)
       ctx.stroke()
     }
-  }, [state, lastMove, mode, regionIdx])
+  }, [state, lastMove, mode, regionIdx, disp])
 
   const place = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const c = Math.round(((event.clientX - rect.left) * SIZE / rect.width - PAD) / STEP)
-    const r = Math.round(((event.clientY - rect.top) * SIZE / rect.height - PAD) / STEP)
+    const c = Math.round(((event.clientX - rect.left) * (W / rect.width) - PAD) / STEP)
+    const r = Math.round(((event.clientY - rect.top) * (W / rect.height) - PAD) / STEP)
     if (r < 0 || r >= N || c < 0 || c >= N) return
     const move = toIdx(r, c)
 
@@ -212,7 +244,9 @@ export default function TsumegoGame() {
           </label>
           <button onClick={() => reset((problemIndex + 1) % TSUMEGO_PROBLEMS.length)}>다음</button>
         </div>
-        <canvas ref={canvasRef} className="tsumego__board" onClick={place} aria-label="사활 문제 바둑판" />
+        <div className="tsumego__board-wrap">
+          <canvas ref={canvasRef} className="tsumego__board" onClick={place} aria-label="사활 문제 바둑판" />
+        </div>
         <p className={'tsumego__message ' + mode}>{message}</p>
         {mode === 'analysis' && (
           <div className="tsumego__color">

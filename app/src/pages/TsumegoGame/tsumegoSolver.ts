@@ -1,12 +1,13 @@
 // Tsumego (life-and-death) solver.
 //
 // Unlike a scripted "solution path + one hardcoded refutation", this performs a real
-// AND-OR minimax search over go.ts's actual Go rules (capture/suicide/ko), restricted
-// to a small "region" of contested points. It answers one question precisely:
-// "with both sides playing optimally from here on, does the defender's group survive?"
-// That same search also yields the opponent's true best reply at every node, so any
-// deviation by the human gets a genuinely computed punishment — not a canned move.
-import { N, SZ, PASS, play, type Color, type GoState } from '../GoGame/go'
+// AND-OR minimax search over tsumegoGo's actual Go rules (capture/suicide/ko),
+// restricted to a small "region" of contested points. It answers one question
+// precisely: "with both sides playing optimally from here on, does the defender's
+// group survive?" That same search also yields the opponent's true best reply at
+// every node, so any deviation by the human gets a genuinely computed punishment —
+// not a canned move.
+import { N, SZ, PASS, play, type Color, type GoState } from './tsumegoGo'
 
 export interface SolveOptions {
   depth?: number
@@ -37,16 +38,44 @@ function countColor(board: Int8Array, color: Color): number {
   return n
 }
 
-function keyOf(s: GoState): string {
+// On a 19x19 board (SZ=361), hashing/scanning the whole board on every node is the
+// dominant cost. Only `region` itself and whatever touches it can ever change — but
+// "touches it" must follow whole groups, not just one ring of neighbors: a stone two
+// steps from the region that's chained (same color, same group) to a region-adjacent
+// stone is captured right along with it when that group's last liberty is filled, even
+// though it never sits next to the region itself. Missing this produced a real bug:
+// `defender permanently safe because of a stone outside the 1-ring` when that stone's
+// whole group was in fact killable — found via a reference (unoptimized) solver
+// disagreeing with this one. So: seed with region ∪ its neighbors, then flood-fill
+// along same-color adjacency from every stone in that seed to pull in the rest of each
+// touched group. Based on the *initial* board only — new stones placed during search
+// are always inside `region` already, and can only ever touch this precomputed set
+// (never reach further), so it stays valid for the whole search.
+function mutableCellsOf(board: Int8Array, region: number[]): number[] {
+  const set = new Set(region)
+  const frontier: number[] = []
+  for (const idx of region) for (const n of neighborsOf(idx)) if (!set.has(n)) { set.add(n); frontier.push(n) }
+  while (frontier.length) {
+    const cur = frontier.pop()!
+    const color = board[cur]
+    if (color === 0) continue
+    for (const n of neighborsOf(cur)) {
+      if (board[n] === color && !set.has(n)) { set.add(n); frontier.push(n) }
+    }
+  }
+  return [...set]
+}
+
+function keyOf(s: GoState, cells: number[]): string {
   let str = ''
-  for (let i = 0; i < SZ; i++) str += s.board[i]
+  for (const i of cells) str += s.board[i]
   return str + '|' + s.toMove + '|' + s.ko
 }
 
 // Depth-exhausted fallback: does the defender already have (at least) two eye-like
 // points inside the region, each fully boxed in by its own stones? A crude but safe
 // "probably alive" proxy — only reached if a problem's region/depth budget is too tight.
-function staticAlive(state: GoState, defender: Color, region: number[]): boolean {
+function staticAlive(state: GoState, defender: Color, region: number[], hasAnyDefenderStone: () => boolean): boolean {
   let eyes = 0
   for (const idx of region) {
     if (state.board[idx] !== 0) continue
@@ -54,7 +83,7 @@ function staticAlive(state: GoState, defender: Color, region: number[]): boolean
     if (ns.length > 0 && ns.every((n) => state.board[n] === defender)) eyes++
     if (eyes >= 2) return true
   }
-  return countColor(state.board, defender) > 0
+  return hasAnyDefenderStone()
 }
 
 interface Candidate {
@@ -92,13 +121,24 @@ export function solve(
   const memo = new Map<string, boolean>()
   let nodes = 0
 
+  // A defender stone sitting outside (region ∪ its neighbors) can never be captured —
+  // no search move can ever reach it — so its mere presence in the *initial* position
+  // already guarantees "defender survives" for the whole search, with no per-node scan.
+  const mutable = mutableCellsOf(state.board, region)
+  const mutableSet = new Set(mutable)
+  const hasPermanentDefender = (() => {
+    for (let i = 0; i < SZ; i++) if (state.board[i] === defender && !mutableSet.has(i)) return true
+    return false
+  })()
+  const hasAnyDefenderStone = (s: GoState): boolean =>
+    hasPermanentDefender || mutable.some((i) => s.board[i] === defender)
+
   function rec(s: GoState, d: number): boolean {
     nodes++
-    const defCount = countColor(s.board, defender)
-    if (defCount === 0) return false
+    if (!hasAnyDefenderStone(s)) return false
     if (s.passes >= 2) return true
-    if (nodes > nodeBudget || d <= 0) return staticAlive(s, defender, region)
-    const key = keyOf(s)
+    if (nodes > nodeBudget || d <= 0) return staticAlive(s, defender, region, () => hasAnyDefenderStone(s))
+    const key = keyOf(s, mutable)
     const hit = memo.get(key)
     if (hit !== undefined) return hit
     const cands = orderedCandidates(s, region)
