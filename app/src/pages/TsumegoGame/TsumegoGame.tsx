@@ -230,9 +230,14 @@ export default function TsumegoGame() {
           <span className="tsumego__goal">{GOAL_LABEL[problem.goal]}</span>
         </div>
         <div className="tsumego__picker">
-          <button onClick={() => reset((problemIndex - 1 + TSUMEGO_PROBLEMS.length) % TSUMEGO_PROBLEMS.length)}>이전</button>
-          <label>
-            문제 번호{' '}
+          <button
+            className="tsumego__nav"
+            onClick={() => reset((problemIndex - 1 + TSUMEGO_PROBLEMS.length) % TSUMEGO_PROBLEMS.length)}
+          >
+            <span className="tsumego__nav-arrow">←</span> 이전
+          </button>
+          <label className="tsumego__jump">
+            문제 번호
             <input
               aria-label="문제 번호"
               type="number"
@@ -242,7 +247,12 @@ export default function TsumegoGame() {
               onChange={(e) => jump(Number(e.target.value))}
             />
           </label>
-          <button onClick={() => reset((problemIndex + 1) % TSUMEGO_PROBLEMS.length)}>다음</button>
+          <button
+            className="tsumego__nav"
+            onClick={() => reset((problemIndex + 1) % TSUMEGO_PROBLEMS.length)}
+          >
+            다음 <span className="tsumego__nav-arrow">→</span>
+          </button>
         </div>
         <div className="tsumego__board-wrap">
           <canvas ref={canvasRef} className="tsumego__board" onClick={place} aria-label="사활 문제 바둑판" />
@@ -256,8 +266,10 @@ export default function TsumegoGame() {
           </div>
         )}
         <div className="tsumego__actions">
-          <button onClick={() => reset()}>처음부터</button>
-          <button className="tsumego__primary" onClick={() => reset((problemIndex + 1) % TSUMEGO_PROBLEMS.length)}>다음 문제</button>
+          <button className="tsumego__restart" onClick={() => reset()}>처음부터</button>
+          <button className="tsumego__primary" onClick={() => reset((problemIndex + 1) % TSUMEGO_PROBLEMS.length)}>
+            다음 문제 <span className="tsumego__nav-arrow">→</span>
+          </button>
         </div>
         <div className="tsumego__footer">
           <span>오답 {mistakes}회</span>
