@@ -14,11 +14,41 @@ import './OddColorGame.css'
 const START_LIVES = 3
 const TICK_MS = 100
 
+type ColorName = '빨강' | '주황' | '노랑' | '초록' | '파랑' | '보라'
+const COLOR_ORDER: ColorName[] = ['빨강', '주황', '노랑', '초록', '파랑', '보라']
+const COLOR_SWATCH: Record<ColorName, string> = {
+  빨강: 'hsl(0, 72%, 55%)',
+  주황: 'hsl(30, 78%, 55%)',
+  노랑: 'hsl(55, 75%, 52%)',
+  초록: 'hsl(130, 50%, 45%)',
+  파랑: 'hsl(212, 62%, 55%)',
+  보라: 'hsl(280, 48%, 55%)',
+}
+
+/** 색상환 각도를 사람이 쓰는 6색(빨주노초파보) 이름으로 분류한다 */
+function hueToColorName(h: number): ColorName {
+  const hh = ((h % 360) + 360) % 360
+  if (hh < 15 || hh >= 345) return '빨강'
+  if (hh < 45) return '주황'
+  if (hh < 70) return '노랑'
+  if (hh < 170) return '초록'
+  if (hh < 255) return '파랑'
+  return '보라'
+}
+
+type ColorStats = Record<ColorName, { correct: number; total: number }>
+function emptyStats(): ColorStats {
+  const stats = {} as ColorStats
+  for (const name of COLOR_ORDER) stats[name] = { correct: 0, total: 0 }
+  return stats
+}
+
 interface Round {
   size: number
   colors: string[]
   oddIndex: number
   timeLimit: number
+  colorName: ColorName
 }
 
 type Status = 'ready' | 'playing' | 'over'
@@ -55,7 +85,7 @@ function makeRound(level: number): Round {
   const odd = hsl(h, s, oddL)
   const colors = Array.from({ length: total }, () => base)
   colors[oddIndex] = odd
-  return { size, colors, oddIndex, timeLimit: timeLimitForLevel(level) }
+  return { size, colors, oddIndex, timeLimit: timeLimitForLevel(level), colorName: hueToColorName(h) }
 }
 
 export default function OddColorGame() {
@@ -68,8 +98,10 @@ export default function OddColorGame() {
   const [status, setStatus] = useState<Status>('ready')
   const [feedback, setFeedback] = useState<Feedback>(null)
   const [revealIdx, setRevealIdx] = useState<number | null>(null)
+  const [finalStats, setFinalStats] = useState<ColorStats>(emptyStats)
 
   const roundRef = useRef<Round | null>(null)
+  const statsRef = useRef<ColorStats>(emptyStats())
   const levelRef = useRef(1)
   const scoreRef = useRef(0)
   const livesRef = useRef(START_LIVES)
@@ -88,6 +120,7 @@ export default function OddColorGame() {
     clearTimers()
     statusRef.current = 'over'
     setStatus('over')
+    setFinalStats({ ...statsRef.current })
     submitScore('oddcolor', scoreRef.current)
   }, [clearTimers])
 
@@ -121,7 +154,9 @@ export default function OddColorGame() {
       livesRef.current -= 1
       setLives(livesRef.current)
       setFeedback({ idx, correct: false })
-      setRevealIdx(roundRef.current ? roundRef.current.oddIndex : null)
+      const r = roundRef.current
+      setRevealIdx(r ? r.oddIndex : null)
+      if (r) statsRef.current[r.colorName].total += 1
       transitionTimer.current = window.setTimeout(() => {
         if (livesRef.current <= 0) {
           gameOver()
@@ -143,6 +178,10 @@ export default function OddColorGame() {
       const gained = 10 + levelRef.current * 3 + Math.round(frac * 10)
       scoreRef.current += gained
       setScore(scoreRef.current)
+      if (r) {
+        statsRef.current[r.colorName].total += 1
+        statsRef.current[r.colorName].correct += 1
+      }
       levelRef.current += 1
       setLevel(levelRef.current)
       setFeedback({ idx, correct: true })
@@ -165,9 +204,11 @@ export default function OddColorGame() {
     scoreRef.current = 0
     livesRef.current = START_LIVES
     statusRef.current = 'playing'
+    statsRef.current = emptyStats()
     setLevel(1)
     setScore(0)
     setLives(START_LIVES)
+    setFinalStats(emptyStats())
     setStatus('playing')
     newRound(1)
   }, [clearTimers, newRound])
@@ -175,6 +216,15 @@ export default function OddColorGame() {
   useEffect(() => clearTimers, [clearTimers])
 
   const pct = round ? Math.max(0, (timeLeft / round.timeLimit) * 100) : 0
+
+  const colorEntries = COLOR_ORDER.map((name) => {
+    const s = finalStats[name]
+    const accuracy = s.total > 0 ? s.correct / s.total : null
+    return { name, accuracy, total: s.total }
+  })
+  const tested = colorEntries.filter((e) => e.accuracy !== null)
+  const best = tested.length ? tested.reduce((a, b) => (b.accuracy! > a.accuracy! ? b : a)) : null
+  const worst = tested.length ? tested.reduce((a, b) => (b.accuracy! < a.accuracy! ? b : a)) : null
 
   return (
     <GamePage gameId="oddcolor" title="다른 색 찾기">
@@ -245,6 +295,32 @@ export default function OddColorGame() {
               <h3>게임 종료</h3>
               <p className="oddcolor__card-score">{score}점</p>
               <p className="oddcolor__card-desc">레벨 {level}까지 도달했어요.</p>
+
+              <div className="oddcolor__breakdown">
+                <h4 className="oddcolor__breakdown-title">색깔별 정확도</h4>
+                {colorEntries.map(({ name, accuracy, total }) => (
+                  <div key={name} className="oddcolor__breakdown-row">
+                    <span className="oddcolor__breakdown-dot" style={{ backgroundColor: COLOR_SWATCH[name] }} />
+                    <span className="oddcolor__breakdown-name">{name}</span>
+                    <div className="oddcolor__breakdown-bar">
+                      <div
+                        className="oddcolor__breakdown-bar-fill"
+                        style={{ width: `${accuracy === null ? 0 : Math.round(accuracy * 100)}%` }}
+                      />
+                    </div>
+                    <span className="oddcolor__breakdown-pct">
+                      {accuracy === null ? '-' : `${Math.round(accuracy * 100)}%`}
+                    </span>
+                    {total > 0 && <span className="oddcolor__breakdown-n">({total})</span>}
+                  </div>
+                ))}
+                {best && worst && best.name !== worst.name && (
+                  <p className="oddcolor__breakdown-summary">
+                    <b>{best.name}</b> 계열에 강하고, <b>{worst.name}</b> 계열에 약해요.
+                  </p>
+                )}
+              </div>
+
               <div className="oddcolor__card-btns">
                 <button className="oddcolor__btn oddcolor__btn--primary" onClick={start}>다시하기</button>
                 <button className="oddcolor__btn" onClick={() => navigate('/')}>게임 목록</button>

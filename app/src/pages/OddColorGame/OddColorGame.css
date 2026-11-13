@@ -128,20 +128,22 @@
   100% { transform: translateX(0); }
 }
 
-/* 오버레이(시작/종료) */
+/* 오버레이(시작/종료) — 화면(뷰포트) 정중앙에 고정해서 띄운다 */
 .oddcolor__overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(20, 27, 43, 0.42);
-  border-radius: var(--radius-lg);
-  z-index: 5;
+  z-index: 50;
+  padding: 24px;
 }
 .oddcolor__card {
-  width: 84%;
-  max-width: 300px;
+  width: 100%;
+  max-width: 340px;
+  max-height: 88vh;
+  overflow-y: auto;
   background-color: var(--surface);
   border-radius: var(--radius-lg);
   padding: 24px 20px;
@@ -164,6 +166,71 @@
   color: var(--accent);
   margin: 6px 0 4px;
 }
+.oddcolor__breakdown {
+  margin: 14px 0 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.oddcolor__breakdown-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.oddcolor__breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+.oddcolor__breakdown-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.oddcolor__breakdown-name {
+  flex-shrink: 0;
+  width: 28px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.oddcolor__breakdown-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--surface-sunken);
+  overflow: hidden;
+}
+.oddcolor__breakdown-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--accent);
+  transition: width 0.3s ease;
+}
+.oddcolor__breakdown-pct {
+  flex-shrink: 0;
+  width: 34px;
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.oddcolor__breakdown-n {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.oddcolor__breakdown-summary {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .oddcolor__card-btns {
   display: flex;
   flex-direction: column;
