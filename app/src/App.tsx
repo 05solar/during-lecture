@@ -14,6 +14,7 @@ import GoGame from './pages/GoGame/GoGame'
 import BurgerGame from './pages/BurgerGame/BurgerGame'
 import WhackGame from './pages/WhackGame/WhackGame'
 import TsumegoGame from './pages/TsumegoGame/TsumegoGame'
+import OddColorGame from './pages/OddColorGame/OddColorGame'
 import GamePlaceholder from './pages/GamePlaceholder/GamePlaceholder'
 import './App.css'
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/game/burger" element={<BurgerGame />} />
           <Route path="/game/whack" element={<WhackGame />} />
           <Route path="/game/tsumego" element={<TsumegoGame />} />
+          <Route path="/game/oddcolor" element={<OddColorGame />} />
           <Route path="/game/:id" element={<GamePlaceholder />} />
           <Route path="*" element={<Home />} />
         </Routes>

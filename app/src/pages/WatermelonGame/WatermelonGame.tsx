@@ -38,16 +38,32 @@ export default function WatermelonGame() {
 
   const scoreRef = useRef(0)
   const posted = useRef(false)
+  // 캔버스 표시 배율. PC(넓은 화면)에서는 훨씬 크게, 모바일에서는 화면 폭에 맞춘다.
+  // 물리 좌표는 항상 W×H(논리 좌표) 기준이며, 렌더 시 배율만 키워 선명하게 확대한다.
+  const transformRef = useRef(1)
 
   useEffect(() => {
     const canvas = canvasRef.current!
     const ctx = canvas.getContext('2d')!
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = W * dpr
-    canvas.height = H * dpr
-    canvas.style.width = W + 'px'
-    canvas.style.height = H + 'px'
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    const applySize = () => {
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const cap = vw >= 760 ? 560 : 360
+      let dispW = Math.max(240, Math.min(vw - 64, cap))
+      // 세로로 긴 보드라 폭만 키우면 화면 높이를 넘어설 수 있다 — 뷰포트 높이 예산으로도 제한한다.
+      const maxH = Math.max(320, vh - 260)
+      dispW = Math.min(dispW, maxH * (W / H))
+      const scale = dispW / W
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = Math.round(W * scale * dpr)
+      canvas.height = Math.round(H * scale * dpr)
+      canvas.style.width = Math.round(W * scale) + 'px'
+      canvas.style.height = Math.round(H * scale) + 'px'
+      transformRef.current = scale * dpr
+    }
+    applySize()
+    window.addEventListener('resize', applySize)
 
     // 엔진 & 벽
     const engine = Engine.create()
@@ -172,6 +188,8 @@ export default function WatermelonGame() {
     }
 
     function render() {
+      const t = transformRef.current
+      ctx.setTransform(t, 0, 0, t, 0, 0)
       ctx.clearRect(0, 0, W, H)
       // 배경
       ctx.fillStyle = '#efeee8'
@@ -245,6 +263,7 @@ export default function WatermelonGame() {
     // 정리
     return () => {
       cancelAnimationFrame(raf)
+      window.removeEventListener('resize', applySize)
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerdown', onDown)
       Events.off(engine, 'collisionStart')

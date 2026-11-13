@@ -7,6 +7,13 @@
   max-width: 360px;
 }
 
+/* PC(넓은 화면)에서는 칸(--cell, JS에서 계산)이 커지는 만큼 컨테이너 폭도 넓혀 보드를 훨씬 크게 보여준다 */
+@media (min-width: 760px) {
+  .g2048 {
+    max-width: 480px;
+  }
+}
+
 .g2048__scores {
   display: flex;
   gap: 16px;
@@ -53,25 +60,25 @@
   justify-content: center;
 }
 
-/* 328 = 패딩8 + 칸72*4 + 간격8*3 */
+/* 보드 한 변 = 패딩8*2 + 칸(--cell)*4 + 간격8*3. --cell은 JS(cellSize)에서 내려준다. */
 .g2048__board {
   position: relative;
-  width: 328px;
-  height: 328px;
+  width: calc(var(--cell) * 4 + 8px * 3 + 16px);
+  height: calc(var(--cell) * 4 + 8px * 3 + 16px);
   padding: 8px;
   background: #cfc9bd;
   border-radius: var(--radius);
   touch-action: none;
   user-select: none;
   display: grid;
-  grid-template-columns: repeat(4, 72px);
-  grid-template-rows: repeat(4, 72px);
+  grid-template-columns: repeat(4, var(--cell));
+  grid-template-rows: repeat(4, var(--cell));
   gap: 8px;
 }
 
 .g2048__cell {
-  width: 72px;
-  height: 72px;
+  width: var(--cell);
+  height: var(--cell);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.4);
 }
@@ -80,8 +87,8 @@
   position: absolute;
   top: 8px;
   left: 8px;
-  width: 72px;
-  height: 72px;
+  width: var(--cell);
+  height: var(--cell);
   display: flex;
   align-items: center;
   justify-content: center;

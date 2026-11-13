@@ -130,6 +130,27 @@ export default function BurgerGame() {
     submitScore('burger', scoreRef.current)
   }, [])
 
+  // 캔버스 표시 크기. PC(넓은 화면)에서는 훨씬 크게, 모바일에서는 화면 폭에 맞춘다.
+  // 세로로 긴 보드라 폭만 키우면 화면 높이를 넘어설 수 있어 뷰포트 높이 예산으로도 제한한다.
+  // 물리 좌표는 항상 VW×VH(논리 좌표) 기준이며, 캔버스는 CSS로만 확대/축소된다.
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const applySize = () => {
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const capW = vw >= 760 ? 560 : 400
+      let dispW = Math.max(240, Math.min(vw - 64, capW))
+      const maxH = Math.max(320, vh - 280)
+      dispW = Math.min(dispW, maxH * (VW / VH))
+      canvas.style.width = Math.round(dispW) + 'px'
+      canvas.style.height = Math.round(dispW * (VH / VW)) + 'px'
+    }
+    applySize()
+    window.addEventListener('resize', applySize)
+    return () => window.removeEventListener('resize', applySize)
+  }, [])
+
   // 메인 루프 + 입력 바인딩
   useEffect(() => {
     // 이미지 로드

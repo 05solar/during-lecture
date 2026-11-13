@@ -3,6 +3,27 @@
    설명창/칩/버튼/메시지 등 UI 크롬은 During-Lecture 오프화이트 테마 토큰에 맞춘다.
    (그라데이션 크롬 / backdrop-filter / 글래스 / 무거운 그림자 없음) */
 
+.bj-root {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* PC(넓은 화면)에서는 카드(clamp)와 함께 테이블 폭도 넓혀 훨씬 크게 보여준다 */
+@media (min-width: 760px) {
+  .bj-root {
+    max-width: 620px;
+  }
+  .bj-card {
+    width: clamp(92px, 13vw, 130px);
+  }
+  .bj-card__rank {
+    font-size: clamp(32px, 4.5vw, 42px);
+  }
+  .bj-card__suit {
+    font-size: clamp(28px, 4vw, 36px);
+  }
+}
+
 .bj-help {
   margin-bottom: 12px;
   border: 1px solid var(--line);

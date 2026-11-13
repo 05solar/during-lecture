@@ -7,6 +7,13 @@
   max-width: 400px;
 }
 
+/* PC(넓은 화면)에서는 캔버스가 CSS로 함께 커지도록 컨테이너 폭을 넓힌다 */
+@media (min-width: 760px) {
+  .burger {
+    max-width: 560px;
+  }
+}
+
 .burger__hud {
   display: flex;
   align-items: baseline;

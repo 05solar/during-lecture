@@ -8,6 +8,13 @@
   max-width: 420px;
 }
 
+/* PC(넓은 화면)에서는 구멍 그리드(1fr 기반)가 함께 커지도록 컨테이너 폭을 넓힌다 */
+@media (min-width: 760px) {
+  .whack {
+    max-width: 600px;
+  }
+}
+
 .whack__hud {
   display: flex;
   align-items: baseline;
@@ -92,8 +99,8 @@
 }
 .whack__mole img {
   display: block;
-  width: 84px;
-  max-width: 82%;
+  width: 82%;
+  max-width: 160px;
   height: auto;
 }
 .whack__hole.up .whack__mole {

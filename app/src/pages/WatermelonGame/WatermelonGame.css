@@ -7,6 +7,13 @@
   max-width: 360px;
 }
 
+/* PC(넓은 화면)에서는 캔버스 표시 배율(JS)과 함께 컨테이너 폭도 넓혀 훨씬 크게 보여준다 */
+@media (min-width: 760px) {
+  .wgame {
+    max-width: 560px;
+  }
+}
+
 .wgame__scores {
   display: flex;
   gap: 16px;

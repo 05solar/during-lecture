@@ -165,6 +165,7 @@ export default function BlackjackGame() {
 
   return (
     <GamePage gameId="blackjack" title="블랙잭">
+      <div className="bj-root">
       {/* 설명창 */}
       <section className="bj-help">
         <button className="bj-help__toggle" onClick={() => setShowHelp((s) => !s)}>
@@ -266,6 +267,7 @@ export default function BlackjackGame() {
           <button className="bj-btn" onClick={() => navigate('/')}>게임 목록</button>
         </div>
       )}
+      </div>
     </GamePage>
   )
 }

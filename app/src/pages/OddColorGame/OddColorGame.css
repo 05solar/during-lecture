@@ -1,0 +1,195 @@
+/* OddColorGame.css
+   다른 색 찾기 스타일. 타일은 같은 아이콘(마스크)을 서로 다른 색으로 채워 비교하게 한다.
+   Lumina 오프화이트 테마 + 인디고블루 포인트. */
+
+.oddcolor {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+}
+
+/* 더 넓은 PC 화면에서는 한층 더 크게 보여준다 */
+@media (min-width: 900px) {
+  .oddcolor {
+    max-width: 940px;
+  }
+}
+
+.oddcolor__hud {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+.oddcolor__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.oddcolor__stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.oddcolor__stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.oddcolor__lives {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+  align-self: center;
+}
+.oddcolor__life {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background-color: var(--surface-high);
+}
+.oddcolor__life.on {
+  background-color: var(--lose);
+}
+
+.oddcolor__timebar {
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--surface-sunken);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.oddcolor__timebar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  border-radius: 999px;
+  transition: width 0.1s linear;
+}
+
+.oddcolor__grid {
+  display: grid;
+  gap: 0;
+}
+
+.oddcolor__tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.oddcolor__tile:disabled {
+  cursor: default;
+}
+
+.oddcolor__fill {
+  position: absolute;
+  inset: 0;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.oddcolor__icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.oddcolor__tile.is-correct {
+  box-shadow: inset 0 0 0 3px var(--win);
+}
+.oddcolor__tile.is-wrong {
+  box-shadow: inset 0 0 0 3px var(--lose);
+  animation: oddcolorShake 0.3s ease;
+}
+.oddcolor__tile.is-reveal {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+.oddcolor__tile.is-wrong.is-reveal {
+  box-shadow: inset 0 0 0 3px var(--lose), inset 0 0 0 5px var(--accent);
+}
+
+@keyframes oddcolorShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  55% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+/* 오버레이(시작/종료) */
+.oddcolor__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 27, 43, 0.42);
+  border-radius: var(--radius-lg);
+  z-index: 5;
+}
+.oddcolor__card {
+  width: 84%;
+  max-width: 300px;
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+.oddcolor__card h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.oddcolor__card-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 8px 0 16px;
+}
+.oddcolor__card-score {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 6px 0 4px;
+}
+.oddcolor__card-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.oddcolor__btn {
+  padding: 11px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background-color: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.oddcolor__btn--primary {
+  background-color: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.oddcolor__btn--primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.oddcolor__hint {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}

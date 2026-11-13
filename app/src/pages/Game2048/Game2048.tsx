@@ -19,7 +19,7 @@ interface Tile {
   merged?: boolean
 }
 
-const STEP = 80 // 칸(72) + 간격(8)
+const GAP = 8
 const SLIDE_MS = 130
 const VEC: Record<Dir, [number, number]> = {
   left: [0, -1], right: [0, 1], up: [-1, 0], down: [1, 0],
@@ -102,6 +102,16 @@ export default function Game2048() {
   const [tiles, setTiles] = useState<Tile[]>([])
   const [score, setScore] = useState(0)
   const [over, setOver] = useState(false)
+  // PC(넓은 화면)에서는 칸을 더 크게 보여준다. JS에서 계산한 값을 CSS 변수(--cell)로
+  // 내려 보내 슬라이드 애니메이션(STEP)과 실제 칸 크기가 항상 일치하도록 한다.
+  const [cellSize, setCellSize] = useState(72)
+  useEffect(() => {
+    const calc = () => setCellSize(window.innerWidth >= 760 ? 100 : 72)
+    calc()
+    window.addEventListener('resize', calc)
+    return () => window.removeEventListener('resize', calc)
+  }, [])
+  const STEP = cellSize + GAP
   const idRef = useRef(1)
   const animating = useRef(false)
   const overRef = useRef(false)
@@ -217,7 +227,12 @@ export default function Game2048() {
         </div>
 
         <div className="g2048__board-wrap">
-          <div className="g2048__board" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <div
+            className="g2048__board"
+            style={{ '--cell': `${cellSize}px` } as CSSProperties}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
             {Array.from({ length: 16 }).map((_, i) => (
               <div key={i} className="g2048__cell" />
             ))}

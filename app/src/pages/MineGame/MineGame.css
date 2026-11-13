@@ -6,6 +6,13 @@
   max-width: 420px;
 }
 
+/* PC(넓은 화면)에서는 무대(비율 기반)와 돌/곡괭이(퍼센트 기반)가 함께 커지도록 컨테이너 폭을 넓힌다 */
+@media (min-width: 760px) {
+  .mine {
+    max-width: 600px;
+  }
+}
+
 .mine__scores {
   display: flex;
   gap: 20px;
@@ -39,7 +46,7 @@
   position: relative;
   display: block;
   width: 100%;
-  height: 340px;
+  aspect-ratio: 420 / 340;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface-sunken);
@@ -54,8 +61,9 @@
 .mine__rock {
   position: absolute;
   left: 50%;
-  bottom: 24px;
-  width: 280px;
+  bottom: 7%;
+  width: 66%;
+  max-width: 400px;
   transform: translateX(-50%);
 }
 .mine__rock.shake {
@@ -70,9 +78,10 @@
 
 .mine__pick {
   position: absolute;
-  right: 24px;
-  top: 22px;
-  width: 150px;
+  right: 6%;
+  top: 6%;
+  width: 35%;
+  max-width: 215px;
   transform-origin: bottom left;
   transform: rotate(-8deg);
   pointer-events: none;

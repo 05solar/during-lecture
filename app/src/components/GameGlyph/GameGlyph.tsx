@@ -97,4 +97,14 @@ const GLYPHS: Record<GlyphKey, JSX.Element> = {
       <rect x="6" y="20" width="20" height="5" rx="2.5" />
     </>
   ),
+  mask: (
+    <>
+      <ellipse cx="11" cy="13" rx="6" ry="3.4" />
+      <circle cx="11" cy="13" r="1.4" fill="currentColor" stroke="none" />
+      <ellipse cx="21" cy="13" rx="6" ry="3.4" />
+      <circle cx="21" cy="13" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M7 21l3 5M12 21l-2 5" />
+      <path d="M20 21l2 5M25 21l-3 5" />
+    </>
+  ),
 }

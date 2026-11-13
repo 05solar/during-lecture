@@ -51,6 +51,7 @@ export type GlyphKey =
   | 'go'
   | 'tsumego'
   | 'burger'
+  | 'mask'
 
 export const GAMES: GameMeta[] = [
   {
@@ -151,6 +152,16 @@ export const GAMES: GameMeta[] = [
     tagline: '30초 동안 튀어나오는 두더지를 최대한 많이 클릭하는 반응 게임.',
     scoreUnit: '최고 점수',
     icon: 'grid',
+    status: 'ready',
+  },
+  {
+    id: 'oddcolor',
+    category: 'puzzle',
+    difficulty: 'normal',
+    title: '다른 색 찾기',
+    tagline: '모두 같은 색 같지만 하나만 미묘하게 달라요. 제한시간 안에 찾아 탭하세요.',
+    scoreUnit: '최고 점수',
+    icon: 'mask',
     status: 'ready',
   },
 ]
