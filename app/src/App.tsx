@@ -2,6 +2,7 @@
 // 애플리케이션 루트. 라우트에 따라 페이지를 전환한다. (상단 네비게이션 바 없음)
 // 라우트: "/" → 메인(Home), "/game/:id" → 각 미니게임, 그 외 → 메인으로.
 
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Home from './pages/Home/Home'
 import Game2048 from './pages/Game2048/Game2048'
@@ -13,10 +14,11 @@ import OmokGame from './pages/OmokGame/OmokGame'
 import GoGame from './pages/GoGame/GoGame'
 import BurgerGame from './pages/BurgerGame/BurgerGame'
 import WhackGame from './pages/WhackGame/WhackGame'
-import TsumegoGame from './pages/TsumegoGame/TsumegoGame'
 import OddColorGame from './pages/OddColorGame/OddColorGame'
 import GamePlaceholder from './pages/GamePlaceholder/GamePlaceholder'
 import './App.css'
+
+const TsumegoGame = lazy(() => import('./pages/TsumegoGame/TsumegoGame'))
 
 export default function App() {
   return (
@@ -33,7 +35,7 @@ export default function App() {
           <Route path="/game/baduk" element={<GoGame />} />
           <Route path="/game/burger" element={<BurgerGame />} />
           <Route path="/game/whack" element={<WhackGame />} />
-          <Route path="/game/tsumego" element={<TsumegoGame />} />
+          <Route path="/game/tsumego" element={<Suspense fallback={<p role="status">사활 문제집을 불러오고 있습니다.</p>}><TsumegoGame /></Suspense>} />
           <Route path="/game/oddcolor" element={<OddColorGame />} />
           <Route path="/game/:id" element={<GamePlaceholder />} />
           <Route path="*" element={<Home />} />

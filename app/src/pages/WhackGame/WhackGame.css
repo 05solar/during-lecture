@@ -121,7 +121,8 @@
   width: 86%;
   max-width: 176px;
   transform: translate(-50%, 135%);
-  transition: transform 0.14s ease-out;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1.15);
+  transform-origin: 50% 90%;
   z-index: 1;
   line-height: 0;
   pointer-events: none;
@@ -136,8 +137,63 @@
   transform: translate(-50%, 0);
 }
 .whack__hole.hit .whack__mole {
-  transform: translate(-50%, 0) scale(0.82);
-  filter: saturate(0.6) brightness(1.05);
+  transition: none;
+  animation: whack-bonk 540ms both;
+}
+.whack__face-hit { position: absolute; inset: 0; opacity: 0; }
+.whack__hole.hit .whack__face { animation: whack-face-out 540ms step-end both; }
+.whack__hole.hit .whack__face-hit { animation: whack-face-in 540ms step-end both; }
+
+@keyframes whack-bonk {
+  0%, 17% { transform: translate(-50%, 0) scale(1, 1); }
+  26% { transform: translate(-50%, 9%) scale(1.14, 0.78) rotate(-5deg); }
+  43% { transform: translate(-50%, -3%) scale(0.94, 1.04) rotate(4deg); }
+  60% { transform: translate(-50%, 4%) scale(1.03, 0.95) rotate(-2deg); }
+  100% { transform: translate(-50%, 135%) scale(0.9, 0.95); }
+}
+@keyframes whack-face-out { 0% { opacity: 1; } 18%, 100% { opacity: 0; } }
+@keyframes whack-face-in { 0% { opacity: 0; } 18%, 100% { opacity: 1; } }
+
+.whack__strike { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.whack__hammer {
+  position: absolute;
+  width: 68%;
+  top: 1%;
+  right: -5%;
+  image-rendering: pixelated;
+  transform-origin: 52% 86%;
+  transform: rotate(32deg);
+  opacity: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .whack:not(.whack--swinging) .whack__hole:not(:disabled):hover .whack__hammer { opacity: 0.85; }
+}
+.whack:not(.whack--swinging) .whack__hole:focus-visible .whack__hammer { opacity: 0.85; }
+.whack__strike.swinging .whack__hammer { animation: whack-swing 540ms both; }
+@keyframes whack-swing {
+  0% { opacity: 1; transform: rotate(38deg) translateY(-10%); }
+  18% { opacity: 1; transform: rotate(-52deg) translateY(5%); }
+  28% { transform: rotate(-44deg) translateY(1%); }
+  55% { opacity: 1; transform: rotate(18deg) translateY(-8%); }
+  100% { opacity: 0; transform: rotate(32deg) translateY(-16%); }
+}
+.whack__spark {
+  position: absolute;
+  left: 43%;
+  top: 23%;
+  width: 10%;
+  aspect-ratio: 1;
+  background: #ffe69a;
+  clip-path: polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%);
+  animation: whack-spark 400ms 95ms both;
+}
+.whack__spark--one { --spark-x: -240%; --spark-y: -90%; }
+.whack__spark--two { --spark-x: 170%; --spark-y: -160%; width: 8%; }
+.whack__spark--three { --spark-x: 220%; --spark-y: 90%; width: 7%; }
+@keyframes whack-spark {
+  0% { opacity: 0; transform: scale(0.3); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--spark-x), var(--spark-y)) rotate(65deg) scale(0.6); }
 }
 
 /* 맞혔을 때 반짝 */
@@ -155,12 +211,13 @@
   font-weight: 800;
   font-size: clamp(0.8rem, 3vw, 1.1rem);
   pointer-events: none;
-  animation: whack-pop 220ms ease-out both;
+  animation: whack-pop 400ms 95ms ease-out both;
 }
 
 @keyframes whack-pop {
   from { transform: translateY(5px); opacity: 0; }
-  to { transform: translateY(-5px); opacity: 1; }
+  35% { opacity: 1; }
+  to { transform: translateY(-18px); opacity: 0; }
 }
 
 .whack__mascot {
@@ -174,6 +231,11 @@
 @media (prefers-reduced-motion: reduce) {
   .whack__mole { transition: none; }
   .whack__pop { animation: none; }
+  .whack__hole.hit .whack__mole { animation: none; transform: translate(-50%, 0); }
+  .whack__hole.hit .whack__face { animation: none; opacity: 0; }
+  .whack__hole.hit .whack__face-hit { animation: none; opacity: 1; }
+  .whack__strike.swinging .whack__hammer { animation: none; opacity: 1; transform: rotate(-35deg); }
+  .whack__spark { display: none; }
 }
 
 /* 오버레이(시작/종료) */

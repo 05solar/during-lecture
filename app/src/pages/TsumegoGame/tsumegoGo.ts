@@ -1,4 +1,4 @@
-// Minimal 19×19 Go rules engine for the tsumego solver/board — captures, suicide
+// Minimal 19×19 Go rules engine for authored tsumego variations: captures, suicide
 // prevention, and ko, nothing else (no AI, no scoring). Kept separate from
 // GoGame/go.ts (which is fixed at 9×9 for the playable Go game + its MCTS AI) so a
 // bigger local-reading board for tsumego can't affect that game. Real classical
@@ -87,6 +87,7 @@ function collectGroup(board: Int8Array, idx: number): number {
 }
 
 export function play(s: GoState, move: number): { state: GoState; captured: number } | null {
+  if (!Number.isInteger(move)) return null;
   if (move === PASS) {
     return {
       state: { board: s.board, ko: -1, toMove: (3 - s.toMove) as Color, passes: s.passes + 1, capB: s.capB, capW: s.capW },

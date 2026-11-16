@@ -8,12 +8,16 @@ import { useNavigate } from 'react-router-dom'
 import GamePage from '../../components/GamePage/GamePage'
 import { submitScore } from '../../lib/scoreStore'
 import moleImage from './assets/mole.webp'
+import moleHitImage from './assets/mole-hit.webp'
+import hammerImage from './assets/hammer.webp'
 import './WhackGame.css'
 
 const HOLES = 9
 const DURATION = 30 // 초
 
 type Status = 'ready' | 'playing' | 'over'
+type Strike = { id: number; caught: boolean }
+const STRIKE_MS = 540
 
 export default function WhackGame() {
   const navigate = useNavigate()
@@ -21,7 +25,10 @@ export default function WhackGame() {
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(DURATION)
   const [status, setStatus] = useState<Status>('ready')
-  const [hit, setHit] = useState(-1) // 방금 맞힌 구멍(애니메이션용)
+  const [strikes, setStrikes] = useState<Record<number, Strike>>({})
+  const strikeId = useRef(0)
+  const hitHoles = useRef(new Set<number>())
+  const effectTimers = useRef(new Set<number>())
 
   const activeRef = useRef(-1)
   const scoreRef = useRef(0)
@@ -35,6 +42,9 @@ export default function WhackGame() {
     clearTimeout(moleTimer.current)
     clearTimeout(gapTimer.current)
     clearInterval(tick.current)
+    effectTimers.current.forEach(clearTimeout)
+    effectTimers.current.clear()
+    hitHoles.current.clear()
   }, [])
 
   const end = useCallback(() => {
@@ -42,14 +52,15 @@ export default function WhackGame() {
     statusRef.current = 'over'
     setStatus('over')
     setActive(-1)
+    setStrikes({})
     activeRef.current = -1
     submitScore('whack', scoreRef.current)
   }, [clearTimers])
 
   const popLoop = useCallback(() => {
     if (statusRef.current !== 'playing') return
-    let idx = Math.floor(Math.random() * HOLES)
-    if (idx === activeRef.current) idx = (idx + 1) % HOLES
+    const available = Array.from({ length: HOLES }, (_, i) => i).filter(i => !hitHoles.current.has(i))
+    const idx = available[Math.floor(Math.random() * available.length)]
     activeRef.current = idx
     setActive(idx)
     const elapsed = DURATION - timeRef.current
@@ -72,7 +83,7 @@ export default function WhackGame() {
     setScore(0)
     setTimeLeft(DURATION)
     setActive(-1)
-    setHit(-1)
+    setStrikes({})
     setStatus('playing')
     tick.current = window.setInterval(() => {
       timeRef.current -= 1
@@ -83,23 +94,37 @@ export default function WhackGame() {
   }, [clearTimers, end, popLoop])
 
   const whack = (i: number) => {
-    if (statusRef.current !== 'playing' || i !== activeRef.current) return
+    if (statusRef.current !== 'playing' || hitHoles.current.has(i)) return
+    const caught = i === activeRef.current
+    const id = ++strikeId.current
+    setStrikes(prev => ({ ...prev, [i]: { id, caught } }))
+    if (caught) hitHoles.current.add(i)
+    const timer = window.setTimeout(() => {
+      effectTimers.current.delete(timer)
+      if (caught) hitHoles.current.delete(i)
+      setStrikes(prev => {
+        if (prev[i]?.id !== id) return prev
+        const next = { ...prev }
+        delete next[i]
+        return next
+      })
+    }, STRIKE_MS)
+    effectTimers.current.add(timer)
+    if (!caught) return
     scoreRef.current += 1
     setScore(scoreRef.current)
     activeRef.current = -1
     setActive(-1)
-    setHit(i)
-    window.setTimeout(() => setHit((h) => (h === i ? -1 : h)), 220)
     clearTimeout(moleTimer.current)
     clearTimeout(gapTimer.current)
-    gapTimer.current = window.setTimeout(popLoop, 120)
+    gapTimer.current = window.setTimeout(popLoop, 260)
   }
 
   useEffect(() => clearTimers, [clearTimers])
 
   return (
     <GamePage gameId="whack" title="두더지 잡기">
-      <div className="whack">
+      <div className={'whack' + (Object.keys(strikes).length ? ' whack--swinging' : '')}>
         <div className="whack__hud">
           <div className="whack__stat">
             <span className="whack__stat-label">점수</span>
@@ -119,16 +144,25 @@ export default function WhackGame() {
           {Array.from({ length: HOLES }).map((_, i) => (
             <button
               key={i}
-              className={'whack__hole' + (active === i ? ' up' : '') + (hit === i ? ' hit' : '')}
+              className={'whack__hole' + (active === i ? ' up' : '') + (strikes[i]?.caught ? ' hit' : '')}
               onClick={() => whack(i)}
               aria-label={active === i ? '두더지' : '구멍'}
               disabled={status !== 'playing'}
             >
               <span className="whack__dirt" />
               <span className="whack__mole">
-                <img src={moleImage} alt="" draggable={false} />
+                <img className="whack__face" src={moleImage} alt="" draggable={false} />
+                <img className="whack__face-hit" src={moleHitImage} alt="" draggable={false} />
               </span>
-              {hit === i && <span className="whack__pop" aria-hidden="true">+1</span>}
+              <span key={strikes[i]?.id ?? 'idle'} className={'whack__strike' + (strikes[i] ? ' swinging' : '')} aria-hidden="true">
+                <img className="whack__hammer" src={hammerImage} alt="" draggable={false} />
+                {strikes[i]?.caught && <>
+                  <span className="whack__spark whack__spark--one" />
+                  <span className="whack__spark whack__spark--two" />
+                  <span className="whack__spark whack__spark--three" />
+                  <span className="whack__pop">+1</span>
+                </>}
+              </span>
             </button>
           ))}
         </div>

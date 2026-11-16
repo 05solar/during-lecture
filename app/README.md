@@ -73,7 +73,8 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
       ├─ OmokGame/            오목 (vs AI, canvas)
       ├─ GoGame/              바둑 (vs AI, 웹워커: go.ts·goAi.ts·goWorker.ts)
       ├─ BurgerGame/          버거 타워 (matter-js, ingredients.ts + assets/ PNG 8종)
-      ├─ WhackGame/           두더지 잡기 (반응 게임, assets/mole.webp 투명 픽셀 캐릭터)
+      ├─ WhackGame/           두더지 잡기 (픽셀 캐릭터·피격 표정·망치, 타격 애니메이션)
+      ├─ TsumegoGame/         사활 학습 (GGG 상급 SGF 140문제, 변화도·해설·복습 기록)
       └─ GamePlaceholder/     /game/:id 미등록 id 폴백 안내
 
 ※ 레포 루트에는 추가로: README.md(랜딩) · screenshot.png · .github/workflows/deploy.yml
@@ -84,6 +85,9 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
 두더지 잡기와 다른색 찾기의 픽셀 커버는 `src/assets/game-covers/whack.webp`,
 `src/assets/game-covers/oddcolor.webp`이며 `src/data/covers.ts`에서 연결한다.
 생성 프롬프트와 에셋 규격은 [이미지 제작 기록](docs/pixel-assets-2026-11-16.md)에 정리했다.
+
+망치 애니메이션과 사활 학습 구성·검증 방법은 [고도화 기록](docs/advanced-games-2026-11-16.md),
+사활 문제집의 출처·이용 조건은 [문제집 안내](src/pages/TsumegoGame/problems/README.md)를 참고한다.
 
 | 게임 | id | 점수 방식 | 비고 |
 | --- | --- | --- | --- |
@@ -96,6 +100,7 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
 | 바둑 | `baduk` | 승리 시 집 차이(margin) | vs AI(웹워커) |
 | 버거 타워 | `burger` | 쌓은 높이 | matter-js 물리, 좌클릭/스페이스로 낙하 |
 | 두더지 잡기 | `whack` | 잡은 수(30초) | 반응 게임, 시간이 갈수록 빨라짐 |
+| 사활 훈련 | `tsumego` | 도움 없이 해답의 응수들을 해결한 점수 | 상급 140문제, 해설 복기·자유 분석·반복 복습 |
 
 원본 7종(버거 제외)은 `Gangneung` 프로젝트에서 이식하며 여행앱 결합(플레이어/백엔드)을 제거하고
 이 사이트의 오프화이트 테마와 `scoreStore` 점수 시스템에 맞게 조정했다.
