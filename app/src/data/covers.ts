@@ -11,7 +11,7 @@ import coverOmok from '../assets/game-covers/omok.webp'
 import coverBaduk from '../assets/game-covers/baduk.webp'
 import coverBurger from '../assets/game-covers/burger.webp'
 import coverWhack from '../assets/game-covers/whack.webp'
-import coverOddColor from '../assets/game-covers/oddcolor.png'
+import coverOddColor from '../assets/game-covers/oddcolor.webp'
 
 export const GAME_COVERS: Record<string, string> = {
   '2048': cover2048,

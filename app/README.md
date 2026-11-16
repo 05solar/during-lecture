@@ -73,13 +73,17 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
       ├─ OmokGame/            오목 (vs AI, canvas)
       ├─ GoGame/              바둑 (vs AI, 웹워커: go.ts·goAi.ts·goWorker.ts)
       ├─ BurgerGame/          버거 타워 (matter-js, ingredients.ts + assets/ PNG 8종)
-      ├─ WhackGame/           두더지 잡기 (반응 게임, assets/mole.webp)
+      ├─ WhackGame/           두더지 잡기 (반응 게임, assets/mole.webp 투명 픽셀 캐릭터)
       └─ GamePlaceholder/     /game/:id 미등록 id 폴백 안내
 
 ※ 레포 루트에는 추가로: README.md(랜딩) · screenshot.png · .github/workflows/deploy.yml
 ```
 
 ## 미니게임 목록
+
+두더지 잡기와 다른색 찾기의 픽셀 커버는 `src/assets/game-covers/whack.webp`,
+`src/assets/game-covers/oddcolor.webp`이며 `src/data/covers.ts`에서 연결한다.
+생성 프롬프트와 에셋 규격은 [이미지 제작 기록](docs/pixel-assets-2026-11-16.md)에 정리했다.
 
 | 게임 | id | 점수 방식 | 비고 |
 | --- | --- | --- | --- |

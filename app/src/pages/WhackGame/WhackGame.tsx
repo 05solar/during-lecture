@@ -128,6 +128,7 @@ export default function WhackGame() {
               <span className="whack__mole">
                 <img src={moleImage} alt="" draggable={false} />
               </span>
+              {hit === i && <span className="whack__pop" aria-hidden="true">+1</span>}
             </button>
           ))}
         </div>
@@ -135,6 +136,7 @@ export default function WhackGame() {
         {status === 'ready' && (
           <div className="whack__overlay">
             <div className="whack__card">
+              <img className="whack__mascot" src={moleImage} alt="" draggable={false} />
               <h3>두더지 잡기</h3>
               <p className="whack__card-desc">{DURATION}초 동안 튀어나오는 두더지를 최대한 많이 클릭하세요.</p>
               <button className="whack__btn whack__btn--primary" onClick={start}>시작하기</button>

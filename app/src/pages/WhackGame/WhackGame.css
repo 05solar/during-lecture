@@ -65,11 +65,35 @@
   position: relative;
   aspect-ratio: 1 / 1;
   border: none;
-  border-radius: var(--radius-lg);
-  background-color: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  background-color: #e4edcf;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: inset 0 -6px 14px rgba(20, 27, 43, 0.06);
+  box-shadow: inset 0 -4px 0 #b8ca99;
+  isolation: isolate;
+  padding: 0;
+  touch-action: manipulation;
+}
+.whack__hole::before {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 11%;
+  height: 26%;
+  background-color: #5e3c30;
+  clip-path: polygon(0 30%, 10% 30%, 10% 15%, 25% 15%, 25% 0, 75% 0, 75% 15%, 90% 15%, 90% 30%, 100% 30%, 100% 75%, 90% 75%, 90% 90%, 10% 90%, 10% 75%, 0 75%);
+}
+.whack__hole::after {
+  content: '';
+  position: absolute;
+  top: 19%;
+  left: 13%;
+  width: 4px;
+  height: 8px;
+  background-color: #a4b882;
+  box-shadow: 4px 4px 0 #a4b882, 8px 0 0 #a4b882;
+  pointer-events: none;
 }
 .whack__hole:disabled {
   cursor: default;
@@ -81,27 +105,32 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 20%;
-  background-color: var(--surface-high);
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  height: 22%;
+  background-color: #b78258;
+  clip-path: polygon(0 35%, 10% 35%, 10% 15%, 25% 15%, 25% 30%, 40% 30%, 40% 40%, 65% 40%, 65% 25%, 85% 25%, 85% 10%, 95% 10%, 95% 35%, 100% 35%, 100% 100%, 0 100%);
+  box-shadow: inset 0 -5px 0 #966443;
   z-index: 2;
+  pointer-events: none;
 }
 
 /* 두더지: 평소엔 흙더미 아래로 완전히 숨고, .up일 때 위로 솟아오름 */
 .whack__mole {
   position: absolute;
   left: 50%;
-  bottom: 14%;
+  bottom: 10%;
+  width: 86%;
+  max-width: 176px;
   transform: translate(-50%, 135%);
   transition: transform 0.14s ease-out;
   z-index: 1;
   line-height: 0;
+  pointer-events: none;
 }
 .whack__mole img {
   display: block;
-  width: 82%;
-  max-width: 160px;
+  width: 100%;
   height: auto;
+  image-rendering: pixelated;
 }
 .whack__hole.up .whack__mole {
   transform: translate(-50%, 0);
@@ -113,7 +142,38 @@
 
 /* 맞혔을 때 반짝 */
 .whack__hole.hit {
-  background-color: var(--accent-soft);
+  background-color: #f3ebc8;
+}
+
+.whack__pop {
+  position: absolute;
+  top: 10%;
+  right: 12%;
+  z-index: 3;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: clamp(0.8rem, 3vw, 1.1rem);
+  pointer-events: none;
+  animation: whack-pop 220ms ease-out both;
+}
+
+@keyframes whack-pop {
+  from { transform: translateY(5px); opacity: 0; }
+  to { transform: translateY(-5px); opacity: 1; }
+}
+
+.whack__mascot {
+  display: block;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 10px;
+  image-rendering: pixelated;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whack__mole { transition: none; }
+  .whack__pop { animation: none; }
 }
 
 /* 오버레이(시작/종료) */
