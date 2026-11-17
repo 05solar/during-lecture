@@ -25,7 +25,7 @@ const POINTS = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
 const MAX_TIER = FRUITS.length - 1
 const DROPPABLE = 5 // 위에서 떨어뜨릴 수 있는 최대 단계(0~4)
 
-type FruitBody = Matter.Body & { tier: number; spawnAt: number; entered: boolean }
+type FruitBody = Matter.Body & { tier: number; spawnAt: number; entered: boolean; tilt: number }
 
 export default function WatermelonGame() {
   const navigate = useNavigate()
@@ -79,6 +79,7 @@ export default function WatermelonGame() {
     let pendingTier = Math.floor(Math.random() * DROPPABLE)
     let upcomingTier = Math.floor(Math.random() * DROPPABLE)
     let pendingX = W / 2
+    let pendingTilt = (Math.random() - 0.5) * 0.5
     let canDrop = true
     let ended = false
     let raf = 0
@@ -97,6 +98,7 @@ export default function WatermelonGame() {
       body.tier = tier
       body.spawnAt = Date.now()
       body.entered = false // 위험선 아래로 완전히 진입했는지
+      body.tilt = (Math.random() - 0.5) * 0.5 // 과일마다 살짝 다른 고정 각도
       Composite.add(engine.world, body)
       return body
     }
@@ -146,6 +148,7 @@ export default function WatermelonGame() {
       addFruit(pendingTier, pendingX, DROP_Y)
       canDrop = false
       pendingTier = upcomingTier
+      pendingTilt = (Math.random() - 0.5) * 0.5
       upcomingTier = Math.floor(Math.random() * DROPPABLE)
       setNextTier(upcomingTier)
       setTimeout(() => {
@@ -156,28 +159,24 @@ export default function WatermelonGame() {
     canvas.addEventListener('pointerdown', onDown)
 
     // 그리기 (과일 캐릭터 스프라이트, 미로드 시 원으로 대체)
-    function drawFruit(x: number, y: number, tier: number, ghost = false) {
+    function drawFruit(x: number, y: number, tier: number, tilt = 0, ghost = false) {
       const f = FRUITS[tier]
       ctx.globalAlpha = ghost ? 0.4 : 1
       if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
         const crop = spriteCropFor(tier)
-        const d = f.r * 2.12
-        // 과일마다 비율이 다르므로(레몬은 가로로 넓고, 파인애플은 세로로 긺) 긴 변을
-        // d에 맞춰 비율을 유지한 채 그린다 — 정사각형으로 늘리지 않는다.
-        const scale = d / Math.max(crop.sw, crop.sh)
+        // 과일마다 비율이 다르므로(레몬은 가로로 넓고, 파인애플은 세로로 긺) 짧은 변을
+        // 물리 충돌 지름에 맞춰 비율을 유지한 채 그린다 — 정사각형으로 늘리지 않는다.
+        // 긴 변을 기준으로 맞추면 짧은 변 쪽에서 실제 과일 사이에 빈틈이 생겨, 짧은
+        // 변을 지름보다 살짝 크게(1.08배) 채워 맞붙은 과일끼리도 틈이 보이지 않게 한다.
+        const target = f.r * 2 * 1.08
+        const scale = target / Math.min(crop.sw, crop.sh)
         const dw = crop.sw * scale
         const dh = crop.sh * scale
-        ctx.drawImage(
-          spriteSheet,
-          crop.sx,
-          crop.sy,
-          crop.sw,
-          crop.sh,
-          x - dw / 2,
-          y - dh / 2,
-          dw,
-          dh,
-        )
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(tilt)
+        ctx.drawImage(spriteSheet, crop.sx, crop.sy, crop.sw, crop.sh, -dw / 2, -dh / 2, dw, dh)
+        ctx.restore()
       } else {
         ctx.beginPath()
         ctx.arc(x, y, f.r, 0, Math.PI * 2)
@@ -209,13 +208,13 @@ export default function WatermelonGame() {
         ctx.moveTo(pendingX, DROP_Y)
         ctx.lineTo(pendingX, H)
         ctx.stroke()
-        drawFruit(pendingX, DROP_Y, pendingTier, true)
+        drawFruit(pendingX, DROP_Y, pendingTier, pendingTilt, true)
       }
       // 과일들
       for (const body of Composite.allBodies(engine.world)) {
         const fb = body as FruitBody
         if (fb.tier == null) continue
-        drawFruit(fb.position.x, fb.position.y, fb.tier)
+        drawFruit(fb.position.x, fb.position.y, fb.tier, fb.tilt)
       }
     }
 
