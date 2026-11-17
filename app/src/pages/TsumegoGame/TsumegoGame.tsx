@@ -36,6 +36,7 @@ export default function TsumegoGame() {
   const started = useRef(Date.now())
   const actionLock = useRef(false)
   const completion = useRef(false)
+  const libraryRef = useRef<HTMLElement>(null)
   const { position, mode } = session
   const busy = session.auto
 
@@ -157,10 +158,18 @@ export default function TsumegoGame() {
       || (filter === 'review' && !!entry?.attempts && (entry.lastResult === 'review' || entry.due <= Date.now())) || (filter === 'saved' && entry?.bookmarked)
     return matching && (tag === 'all' || p.tags.includes(tag)) && (!search || String(p.number).includes(search.trim()))
   }), [progress, filter, tag, search])
-  const nextProblem = () => {
+  const stepProblem = (dir: 1 | -1) => {
     const current = filtered.findIndex(p => p.id === problem.id)
-    const next = filtered.length ? filtered[(current + 1) % filtered.length] : TSUMEGO_PROBLEMS[(index + 1) % TSUMEGO_PROBLEMS.length]
+    const count = filtered.length || TSUMEGO_PROBLEMS.length
+    const nextIndex = (current + dir + count) % count
+    const next = filtered.length ? filtered[nextIndex] : TSUMEGO_PROBLEMS[(index + dir + TSUMEGO_PROBLEMS.length) % TSUMEGO_PROBLEMS.length]
     reset(TSUMEGO_PROBLEMS.indexOf(next))
+  }
+  const nextProblem = () => stepProblem(1)
+  const previousProblem = () => stepProblem(-1)
+  const openLibrary = () => {
+    setShowLibrary(true)
+    libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
   const solved = Object.values(progress).filter(entry => entry.solved > 0).length
   const reviewCount = Object.values(progress).filter(entry => entry.attempts > 0 && (entry.lastResult === 'review' || entry.due <= Date.now())).length
@@ -178,11 +187,11 @@ export default function TsumegoGame() {
       {storageWarning && <p role="status">브라우저 저장 공간을 사용할 수 없어 이번 학습 기록을 저장하지 못했습니다.</p>}
       <div className="tsumego__workspace">
         <section className="tsumego__play" aria-label="사활 풀이">
-          <div className="tsumego__problem-head"><div><span className="tsumego__eyebrow">문제 {String(problem.number).padStart(3, '0')}</span><h3>{problem.player === 1 ? '흑' : '백'} 선수, 최선의 수를 찾으세요</h3></div><span className="tsumego__clock" aria-label="풀이 시간">{formatTime(elapsed)}</span></div>
+          <div className="tsumego__problem-head"><div><span className="tsumego__eyebrow">문제 {String(problem.number).padStart(3, '0')}</span><h3>{problem.player === 1 ? '흑' : '백'} 선수, 최선의 수를 찾으세요</h3></div><div className="tsumego__problem-head-right"><button className="tsumego__jump" onClick={openLibrary}>문제 목록</button><span className="tsumego__clock" aria-label="풀이 시간">{formatTime(elapsed)}</span></div></div>
           <div className="tsumego__board-tools"><div className="tsumego__tags">{problem.tags.map(t => <span key={t}>{t}</span>)}</div><button onClick={() => setFullBoard(v => !v)} aria-pressed={fullBoard}>{fullBoard ? '부분 확대' : '19×19 전체'}</button><button onClick={() => setNumbered(v => !v)} aria-pressed={numbered}>수순 번호</button></div>
           <div className="tsumego__board-wrap"><TsumegoBoard key={problem.id} problem={problem} position={position} fullBoard={fullBoard} numbered={numbered} hint={hint} review={canStudy} disabled={busy || (mode === 'solve' && ['solved', 'refuted', 'unknown'].includes(session.feedback))} color={mode === 'analysis' ? analysisColor : position.state.toMove} onMove={move} /></div>
           <div className={`tsumego__message ${session.feedback}`} role="status" aria-live="polite"><strong>{busy ? '상대 응수 중' : mode === 'analysis' ? '자유 분석' : mode === 'review' ? '해설 복기' : { idle: '풀이 중', correct: '계속 읽어 보세요', refuted: '반박 수순', unknown: '미등록 수순', solved: '풀이 완료' }[session.feedback]}</strong><p>{session.message}</p></div>
-          <div className="tsumego__controls"><button onClick={undo} disabled={busy || !session.history.length}>한 수 되돌리기</button><button onClick={() => reset()}>다시 풀기</button><button onClick={nextProblem} className="tsumego__primary">다음 문제 →</button></div>
+          <div className="tsumego__controls"><button onClick={undo} disabled={busy || !session.history.length}>한 수 되돌리기</button><button onClick={() => reset()}>다시 풀기</button><button onClick={previousProblem} className="tsumego__nav" aria-label="이전 문제">← 이전</button><button onClick={nextProblem} className="tsumego__primary">다음 문제 →</button></div>
           <div className="tsumego__move-strip" aria-label="착수 기록">{position.moves.length ? position.moves.map((m, i) => <button key={i} onClick={() => {
             if (busy) return
             markReview()
@@ -204,7 +213,7 @@ export default function TsumegoGame() {
           <div className="tsumego__source"><p>문제·해설: An Younggil & David Ormerod<br />Go Game Guru · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noreferrer">CC BY-NC-SA 4.0</a></p><a href={problem.sourceUrl} target="_blank" rel="noreferrer">원본 문제 보기 ↗</a><button onClick={download}>SGF 내려받기</button><p className="tsumego__source-note">원본에 표시된 정답을 기준으로 판정합니다. 등록되지 않은 수는 자유 분석에서 확인하세요.</p></div>
         </aside>
       </div>
-      <section className="tsumego__library" aria-label="문제집">
+      <section className="tsumego__library" aria-label="문제집" ref={libraryRef}>
         <div className="tsumego__section-head"><h3>상급 문제집 <span>{filtered.length}문제</span></h3><button onClick={() => setShowLibrary(v => !v)} aria-expanded={showLibrary}>{showLibrary ? '목록 접기' : '문제 선택'}</button></div>
         <div className="tsumego__filters"><label>학습 상태<select value={filter} onChange={event => { setFilter(event.target.value); setShowLibrary(true) }}><option value="all">전체</option><option value="unsolved">미해결</option><option value="review">오답·오늘 복습</option><option value="solved">해결한 문제</option><option value="saved">저장한 문제</option></select></label><label>주제<select value={tag} onChange={event => { setTag(event.target.value); setShowLibrary(true) }}><option value="all">모든 주제</option>{['패', '빅', '수상전·묘수', '긴 수읽기'].map(t => <option key={t}>{t}</option>)}</select></label><label>번호 검색<input type="search" inputMode="numeric" value={search} placeholder="예: 24" onChange={event => { setSearch(event.target.value); setShowLibrary(true) }} /></label></div>
         {showLibrary && <div className="tsumego__problem-list">{filtered.length ? filtered.map(p => <button key={p.id} aria-current={p.id === problem.id ? 'true' : undefined} onClick={() => reset(TSUMEGO_PROBLEMS.indexOf(p))}><strong>{String(p.number).padStart(3, '0')}</strong><span>Go Game Guru {p.number}<small>{p.tags.join(' · ')}</small></span><span>{progress[p.id]?.lastResult === 'review' ? '복습' : progress[p.id]?.solved ? '해결' : '미해결'}</span></button>) : <p className="tsumego__empty">조건에 맞는 문제가 없습니다. 다른 필터를 선택해 보세요.</p>}</div>}

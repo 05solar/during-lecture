@@ -18,6 +18,8 @@
 .tsumego__play, .tsumego__study { min-width: 0; }
 .tsumego__problem-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .tsumego__problem-head h3 { font-size: 17px; margin-top: 6px; letter-spacing: -0.03em; }
+.tsumego__problem-head-right { display: flex; align-items: center; gap: 12px; }
+.tsumego__jump { padding: 7px 10px; font-size: 11px; }
 .tsumego__clock { font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums; }
 .tsumego__board-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 15px 0 12px; }
 .tsumego__board-tools button { padding: 6px 9px; font-size: 11px; }
@@ -34,8 +36,9 @@
 .tsumego__message p { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
 .tsumego__message.solved strong { color: var(--win); }
 .tsumego__message.refuted strong, .tsumego__message.unknown strong { color: var(--warn); }
-.tsumego__controls { display: flex; gap: 8px; }
-.tsumego__controls button { flex: 1; padding: 12px 8px; }
+.tsumego__controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.tsumego__controls button { flex: 1; padding: 12px 8px; min-width: 90px; }
+.tsumego__controls button.tsumego__nav { flex: 0 1 auto; min-width: 72px; }
 .tsumego button.tsumego__primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .tsumego button.tsumego__primary:hover { background: var(--accent-hover); }
 .tsumego__move-strip { display: flex; gap: 5px; padding: 15px 0 10px; overflow-x: auto; min-height: 50px; }
