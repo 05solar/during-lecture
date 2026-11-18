@@ -1,86 +1,86 @@
 /* Tsumego study workspace: large board, quiet side notes and divider-based library. */
 .tsumego { width: 100%; max-width: 1080px; color: var(--text); }
 .tsumego button, .tsumego select, .tsumego input { font: inherit; }
-.tsumego button { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); padding: 9px 12px; font-size: 12px; font-weight: 650; cursor: pointer; }
+.tsumego button { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); padding: 10px 14px; font-size: 14px; font-weight: 650; cursor: pointer; }
 .tsumego button:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .tsumego button:disabled { opacity: 0.45; cursor: default; }
 .tsumego button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
 .tsumego button:focus-visible, .tsumego select:focus-visible, .tsumego input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .tsumego__header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 30px; }
-.tsumego__eyebrow { font: 700 10px var(--font-mono); letter-spacing: 0.12em; color: var(--text-muted); }
-.tsumego__header h2 { margin: 8px 0; font-size: clamp(22px, 3vw, 30px); letter-spacing: -0.05em; }
-.tsumego__intro { color: var(--text-muted); font-size: 13px; }
+.tsumego__eyebrow { font: 700 11px var(--font-mono); letter-spacing: 0.12em; color: var(--text-muted); }
+.tsumego__header h2 { margin: 8px 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -0.05em; }
+.tsumego__intro { color: var(--text-muted); font-size: 14px; }
 .tsumego__progress { min-width: 175px; display: flex; flex-direction: column; gap: 7px; }
-.tsumego__progress strong { font-size: 27px; font-variant-numeric: tabular-nums; }
-.tsumego__progress small, .tsumego__progress span { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.tsumego__progress strong { font-size: 28px; font-variant-numeric: tabular-nums; }
+.tsumego__progress small, .tsumego__progress span { font-size: 13px; font-weight: 500; color: var(--text-muted); }
 .tsumego__progress progress { width: 100%; height: 5px; accent-color: var(--accent); }
 .tsumego__workspace { display: grid; grid-template-columns: minmax(0, 640px) minmax(260px, 1fr); gap: 32px; align-items: start; }
 .tsumego__play, .tsumego__study { min-width: 0; }
 .tsumego__problem-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.tsumego__problem-head h3 { font-size: 17px; margin-top: 6px; letter-spacing: -0.03em; }
+.tsumego__problem-head h3 { font-size: 19px; margin-top: 6px; letter-spacing: -0.03em; }
 .tsumego__problem-head-right { display: flex; align-items: center; gap: 12px; }
-.tsumego__jump { padding: 7px 10px; font-size: 11px; }
-.tsumego__clock { font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.tsumego__jump { padding: 8px 12px; font-size: 13px; }
+.tsumego__clock { font: 700 20px var(--font-mono); font-variant-numeric: tabular-nums; }
 .tsumego__board-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 15px 0 12px; }
-.tsumego__board-tools button { padding: 6px 9px; font-size: 11px; }
+.tsumego__board-tools button { padding: 7px 10px; font-size: 13px; }
 .tsumego__tags { display: flex; flex-wrap: wrap; gap: 5px; margin-right: auto; }
-.tsumego__tags span { font-size: 10px; padding: 4px 7px; background: var(--surface-sunken); border-radius: 4px; }
+.tsumego__tags span { font-size: 12px; padding: 4px 8px; background: var(--surface-sunken); border-radius: 4px; }
 .tsumego__board-wrap { width: 100%; border: 1px solid #bc965e; border-radius: 8px; overflow: hidden; line-height: 0; background: #dfb36f; }
 .tsumego__board { display: block; width: 100%; height: auto; touch-action: manipulation; }
-.tsumego__coordinate { fill: #684325; font: 600 9px system-ui, sans-serif; }
+.tsumego__coordinate { fill: #684325; font: 600 10px system-ui, sans-serif; }
 .tsumego__intersection { cursor: pointer; }
 .tsumego__intersection:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2; }
 .tsumego__board[aria-busy="true"] .tsumego__intersection { cursor: wait; }
-.tsumego__message { min-height: 87px; padding: 15px 0; line-height: 1.6; }
-.tsumego__message strong { font-size: 13px; }
-.tsumego__message p { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+.tsumego__message { min-height: 90px; padding: 15px 0; line-height: 1.6; }
+.tsumego__message strong { font-size: 15px; }
+.tsumego__message p { color: var(--text-muted); font-size: 14px; margin-top: 3px; }
 .tsumego__message.solved strong { color: var(--win); }
 .tsumego__message.refuted strong, .tsumego__message.unknown strong { color: var(--warn); }
 .tsumego__controls { display: flex; gap: 8px; flex-wrap: wrap; }
-.tsumego__controls button { flex: 1; padding: 12px 8px; min-width: 90px; }
-.tsumego__controls button.tsumego__nav { flex: 0 1 auto; min-width: 72px; }
+.tsumego__controls button { flex: 1; padding: 13px 8px; min-width: 90px; }
+.tsumego__controls button.tsumego__nav { flex: 0 1 auto; min-width: 76px; }
 .tsumego button.tsumego__primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .tsumego button.tsumego__primary:hover { background: var(--accent-hover); }
 .tsumego__move-strip { display: flex; gap: 5px; padding: 15px 0 10px; overflow-x: auto; min-height: 50px; }
-.tsumego__move-strip button { white-space: nowrap; font-size: 10px; padding: 5px 7px; }
-.tsumego__move-strip > span, .tsumego__board-note { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+.tsumego__move-strip button { white-space: nowrap; font-size: 12px; padding: 6px 8px; }
+.tsumego__move-strip > span, .tsumego__board-note { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
 .tsumego__study { border-left: 1px solid var(--line); padding-left: 26px; }
 .tsumego__section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.tsumego__section-head h3 { font-size: 16px; }
-.tsumego__section-head h3 span { font-size: 12px; font-weight: 500; margin-left: 8px; color: var(--text-muted); }
+.tsumego__section-head h3 { font-size: 18px; }
+.tsumego__section-head h3 span { font-size: 13px; font-weight: 500; margin-left: 8px; color: var(--text-muted); }
 .tsumego__mode-tabs { display: flex; gap: 4px; margin-top: 18px; }
-.tsumego__mode-tabs button { flex: 1; white-space: nowrap; padding: 8px 5px; font-size: 11px; }
+.tsumego__mode-tabs button { flex: 1; white-space: nowrap; padding: 9px 5px; font-size: 13px; }
 .tsumego__facts { margin: 18px 0; }
-.tsumego__facts > div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 11px; line-height: 1.5; }
+.tsumego__facts > div { display: flex; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
 .tsumego__facts dt { color: var(--text-muted); flex-shrink: 0; }
 .tsumego__facts dd { text-align: right; margin: 0; }
 .tsumego__hint-box { background: var(--surface-sunken); border-radius: var(--radius-sm); padding: 14px; }
-.tsumego__hint-box p { font-size: 12px; line-height: 1.8; margin-bottom: 12px; color: var(--text-muted); }
+.tsumego__hint-box p { font-size: 14px; line-height: 1.8; margin-bottom: 12px; color: var(--text-muted); }
 .tsumego__hint-box button { width: 100%; }
 .tsumego__analysis-tools, .tsumego__review-tools { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-.tsumego__analysis-tools span { font-size: 12px; margin-right: auto; }
+.tsumego__analysis-tools span { font-size: 14px; margin-right: auto; }
 .tsumego__review-tools button { flex: 1; }
 .tsumego__variations { margin: 18px 0; }
-.tsumego h4 { font-size: 12px; margin-bottom: 8px; }
+.tsumego h4 { font-size: 14px; margin-bottom: 8px; }
 .tsumego__variations > button { display: flex; justify-content: space-between; align-items: center; width: 100%; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 12px 0; text-align: left; background: none; gap: 8px; }
-.tsumego__variations small { font-size: 10px; color: var(--text-muted); }
-.tsumego__variations > p { font-size: 12px; color: var(--text-muted); }
+.tsumego__variations small { font-size: 12px; color: var(--text-muted); }
+.tsumego__variations > p { font-size: 14px; color: var(--text-muted); }
 .tsumego__comment { padding: 15px 0; border-top: 1px solid var(--line); }
-.tsumego__comment p { font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-muted); }
-.tsumego__source { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 10px; color: var(--text-muted); line-height: 1.8; }
+.tsumego__comment p { font-size: 14px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-muted); }
+.tsumego__source { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-muted); line-height: 1.8; }
 .tsumego__source a { text-decoration: underline; text-underline-offset: 3px; margin-right: 12px; }
-.tsumego__source button { padding: 0; border: 0; border-radius: 0; font-size: 10px; background: none; text-decoration: underline; text-underline-offset: 3px; }
+.tsumego__source button { padding: 0; border: 0; border-radius: 0; font-size: 12px; background: none; text-decoration: underline; text-underline-offset: 3px; }
 .tsumego__source-note { margin-top: 12px; }
 .tsumego__library { margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--line); }
 .tsumego__filters { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0 10px; }
-.tsumego__filters label { display: flex; flex-direction: column; gap: 6px; font-size: 10px; color: var(--text-muted); }
-.tsumego__filters select, .tsumego__filters input { padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 12px; width: 150px; }
-.tsumego__problem-list { max-height: 390px; overflow-y: auto; }
-.tsumego__problem-list > button { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; width: 100%; padding: 14px 8px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: none; text-align: left; }
+.tsumego__filters label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.tsumego__filters select, .tsumego__filters input { padding: 10px 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 14px; width: 160px; }
+.tsumego__problem-list { max-height: 420px; overflow-y: auto; }
+.tsumego__problem-list > button { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; width: 100%; padding: 14px 8px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: none; text-align: left; }
 .tsumego__problem-list > button[aria-current="true"] { background: var(--accent-soft); }
-.tsumego__problem-list strong { font: 700 14px var(--font-mono); }
-.tsumego__problem-list small { display: block; font-size: 10px; font-weight: 400; margin-top: 4px; color: var(--text-muted); }
-.tsumego__empty { padding: 25px 0; font-size: 13px; color: var(--text-muted); }
+.tsumego__problem-list strong { font: 700 15px var(--font-mono); }
+.tsumego__problem-list small { display: block; font-size: 12px; font-weight: 400; margin-top: 4px; color: var(--text-muted); }
+.tsumego__empty { padding: 25px 0; font-size: 14px; color: var(--text-muted); }
 @media (max-width: 880px) {
   .tsumego { max-width: 640px; }
   .tsumego__workspace { grid-template-columns: minmax(0, 1fr); gap: 25px; }
@@ -91,10 +91,10 @@
 @media (max-width: 480px) {
   .tsumego__header { flex-direction: column; margin-bottom: 24px; }
   .tsumego__progress { width: 100%; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 5px 12px; }
-  .tsumego__progress strong { font-size: 22px; }
+  .tsumego__progress strong { font-size: 24px; }
   .tsumego__progress progress { grid-column: 1 / -1; }
-  .tsumego__problem-head h3 { font-size: 15px; }
-  .tsumego__controls button { font-size: 11px; }
+  .tsumego__problem-head h3 { font-size: 17px; }
+  .tsumego__controls button { font-size: 13px; }
   .tsumego__filters { gap: 10px; }
   .tsumego__filters label { flex: 1; min-width: 90px; }
   .tsumego__filters select, .tsumego__filters input { width: 100%; min-width: 0; }
