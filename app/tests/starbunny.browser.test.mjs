@@ -27,10 +27,10 @@ beforeEach(async () => {
 afterEach(async () => { await context.close(); assert.deepEqual(errors, []) })
 const goto = async () => {
   await page.goto(`${base}/#/game/starbunny`)
-  await page.getByRole('button', { name: '별 주우러 가기' }).waitFor()
+  await page.getByRole('button', { name: '시작' }).waitFor()
 }
 const start = async () => {
-  await page.getByRole('button', { name: '별 주우러 가기' }).click()
+  await page.getByRole('button', { name: '시작' }).click()
   await page.clock.runFor(3200)
 }
 const x = () => page.locator('.starbunny__bunny').getAttribute('data-x').then(Number)
@@ -38,14 +38,18 @@ const x = () => page.locator('.starbunny__bunny').getAttribute('data-x').then(Nu
 test('home card, original art and desktop/mobile layouts load without overflow', async () => {
   await page.goto(base)
   await page.locator('a.game-card[href="#/game/starbunny"]').click()
-  await page.getByRole('button', { name: '별 주우러 가기' }).waitFor()
+  await page.getByRole('button', { name: '시작' }).waitFor()
   assert.ok(await page.locator('.starbunny img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)))
+  assert.equal(await page.locator('.starbunny__guide, .starbunny__intro').count(), 0)
+  assert.ok((await page.locator('.starbunny__stage').boundingBox()).width >= 1000)
   await page.screenshot({ path: join(tmpdir(), 'starbunny-desktop.png'), fullPage: true })
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 })
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
-    const button = await page.getByRole('button', { name: '별 주우러 가기' }).boundingBox()
+    const button = await page.getByRole('button', { name: '시작' }).boundingBox()
     const bounds = await page.locator('.starbunny__stage').boundingBox()
+    assert.ok(bounds.width >= width - 26)
+    assert.ok(bounds.height >= 420)
     assert.ok(button.y >= bounds.y && button.y + button.height <= bounds.y + bounds.height)
   }
   await page.setViewportSize({ width: 390, height: 844 })
@@ -86,20 +90,20 @@ test('full run saves best score, result fits a small screen, replay resets, relo
   await page.clock.runFor(6000)
   await page.screenshot({ path: join(tmpdir(), 'starbunny-playing.png'), fullPage: true })
   await page.clock.runFor(59000)
-  await page.getByRole('button', { name: '한 번 더 산책' }).waitFor()
+  await page.getByRole('button', { name: '다시하기' }).waitFor()
   const score = Number((await page.getByTestId('bunny-score').textContent()).replaceAll(',', ''))
   assert.ok(score > 500)
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('minigame-arcade:best-scores')).starbunny), score)
   await page.setViewportSize({ width: 320, height: 740 })
-  const button = await page.getByRole('button', { name: '한 번 더 산책' }).boundingBox()
+  const button = await page.getByRole('button', { name: '다시하기' }).boundingBox()
   const bounds = await page.locator('.starbunny__stage').boundingBox()
   assert.ok(button.y >= bounds.y && button.y + button.height <= bounds.y + bounds.height)
   await page.screenshot({ path: join(tmpdir(), 'starbunny-result.png'), fullPage: true })
-  await page.getByRole('button', { name: '한 번 더 산책' }).click()
+  await page.getByRole('button', { name: '다시하기' }).click()
   assert.equal(await page.getByTestId('bunny-score').textContent(), '0')
   assert.equal(await page.locator('.starbunny__drop').count(), 0)
   await page.reload()
-  await page.getByRole('button', { name: '별 주우러 가기' }).waitFor()
+  await page.getByRole('button', { name: '시작' }).waitFor()
   assert.equal(Number((await page.locator('.game-page__best-value').textContent()).replaceAll(',', '')), score)
 })
 

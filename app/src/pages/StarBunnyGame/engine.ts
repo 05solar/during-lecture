@@ -13,6 +13,10 @@ export const WIDTH = 640
 export const HEIGHT = 480
 export const CATCH_Y = 418
 export const DURATION = 60
+// 넓은 토끼 영역과 아이템 자체의 반경을 합산해 가장자리도 받는다.
+const BUNNY_HALF_WIDTH = 72
+const BUNNY_HALF_HEIGHT = 28
+const ITEM_RADIUS: Record<Kind, number> = { star: 24, gold: 28, meteor: 24, shield: 26 }
 export const multiplier = (combo: number) => Math.min(3, 1 + Math.floor(combo / 5))
 export const level = (remaining: number) => remaining > 40 ? 1 : remaining > 20 ? 2 : 3
 export function createGame(phase: Phase = 'ready'): Game {
@@ -40,20 +44,21 @@ export function stepGame(previous: Game, elapsed: number, direction: number, tar
   g.remaining = Math.max(0, g.remaining - dt)
   g.invincible = Math.max(0, g.invincible - dt)
   const move = direction ? direction * 430 * dt : target === null ? 0 : Math.max(-430 * dt, Math.min(430 * dt, target - g.x))
-  g.x = Math.max(38, Math.min(WIDTH - 38, g.x + move))
+  g.x = Math.max(BUNNY_HALF_WIDTH, Math.min(WIDTH - BUNNY_HALF_WIDTH, g.x + move))
   const spark = (text: string, x: number) => g.sparks.push({ id: ++g.serial, x, y: CATCH_Y - 34, text, life: 0.8 })
   for (const drop of previous.drops) {
     const next = { ...drop, y: drop.y + drop.speed * dt }
-    const crossing = drop.y <= CATCH_Y + 12 && next.y >= CATCH_Y - 12
-    if (crossing && Math.abs(next.x - g.x) < (drop.kind === 'meteor' ? 32 : 42) && g.hearts > 0) {
+    const radius = ITEM_RADIUS[drop.kind]
+    const crossing = drop.y <= CATCH_Y + BUNNY_HALF_HEIGHT + radius && next.y >= CATCH_Y - BUNNY_HALF_HEIGHT - radius
+    if (crossing && Math.abs(next.x - g.x) <= BUNNY_HALF_WIDTH + radius && g.hearts > 0) {
       if (drop.kind === 'meteor') {
         if (g.invincible === 0) {
-          if (g.shield) { g.shield = false; spark('방어!', next.x); g.event = 'shield' }
-          else { g.hearts--; g.combo = 0; spark('아야!', next.x); g.event = 'hurt' }
+          if (g.shield) { g.shield = false; g.event = 'shield' }
+          else { g.hearts--; g.combo = 0; spark('−1', next.x); g.event = 'hurt' }
           g.invincible = 1.4
         }
       } else if (drop.kind === 'shield') {
-        g.shield = true; spark('보호막!', next.x); g.event = 'shield'
+        g.shield = true; g.event = 'shield'
       } else {
         g.combo++; g.caught++; g.maxCombo = Math.max(g.combo, g.maxCombo)
         const points = (drop.kind === 'gold' ? 30 : 10) * multiplier(g.combo)
