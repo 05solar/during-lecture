@@ -110,9 +110,7 @@ export default function StarBunnyGame() {
           <div className="starbunny__hud">
             <div><span>점수</span><strong data-testid="bunny-score">{game.score.toLocaleString()}</strong></div>
             <div><span>남은 시간</span><strong className={game.remaining <= 10 ? 'starbunny__urgent' : ''} data-testid="bunny-time">{Math.ceil(game.remaining)}<small>초</small></strong></div>
-            <div><span>남은 기회</span><strong className="starbunny__hearts" aria-label={`남은 기회 ${game.hearts}개`}>
-              {[0, 1, 2].map(i => <svg key={i} viewBox="0 0 16 14" aria-hidden="true" className={i < game.hearts ? '' : 'empty'}><path d="M2 0h4v2h4V0h4v2h2v6h-2v2h-2v2h-2v2H6v-2H4v-2H2V8H0V2h2z" /></svg>)}
-            </strong></div>
+            <div><span>피격</span><strong data-testid="bunny-hits">{game.hits}<small>회</small></strong></div>
           </div>
           <div ref={stage} tabIndex={0} className="starbunny__stage" aria-label="별 받기 영역. 방향키 또는 A, D로 이동하고 P 또는 Escape로 일시정지합니다."
             onKeyDown={e => {

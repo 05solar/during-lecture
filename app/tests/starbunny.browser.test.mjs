@@ -17,7 +17,7 @@ after(async () => { await browser?.close(); await server?.close() })
 beforeEach(async () => {
   errors.length = 0
   context = await browser.newContext({ viewport: { width: 1280, height: 1000 } })
-  // Identical stars at the center make a full run reproducible through real UI input.
+  // Centered drops make scoring and repeated meteor hits reproducible.
   await context.addInitScript(() => { Math.random = () => 0.5 })
   page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
@@ -90,10 +90,14 @@ test('full run saves best score, result fits a small screen, replay resets, relo
   await goto(); await start()
   await page.clock.runFor(6000)
   await page.screenshot({ path: join(tmpdir(), 'starbunny-playing.png'), fullPage: true })
-  await page.clock.runFor(59000)
+  await page.clock.runFor(24000)
+  assert.ok(Number(await page.getByTestId('bunny-hits').textContent().then(text => text.replace('회', ''))) >= 3)
+  assert.equal(await page.getByRole('button', { name: '다시하기' }).count(), 0)
+  assert.ok(Number((await page.getByTestId('bunny-time').textContent()).replace('초', '')) > 0)
+  await page.clock.runFor(35000)
   await page.getByRole('button', { name: '다시하기' }).waitFor()
   const score = Number((await page.getByTestId('bunny-score').textContent()).replaceAll(',', ''))
-  assert.ok(score > 500)
+  assert.ok(score > 0)
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('minigame-arcade:best-scores')).starbunny), score)
   await page.setViewportSize({ width: 320, height: 740 })
   const button = await page.getByRole('button', { name: '다시하기' }).boundingBox()
@@ -102,6 +106,7 @@ test('full run saves best score, result fits a small screen, replay resets, relo
   await page.screenshot({ path: join(tmpdir(), 'starbunny-result.png'), fullPage: true })
   await page.getByRole('button', { name: '다시하기' }).click()
   assert.equal(await page.getByTestId('bunny-score').textContent(), '0')
+  assert.equal(await page.getByTestId('bunny-hits').textContent(), '0회')
   assert.equal(await page.locator('.starbunny__drop').count(), 0)
   await page.reload()
   await page.getByRole('button', { name: '시작' }).waitFor()

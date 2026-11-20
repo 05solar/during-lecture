@@ -5,13 +5,13 @@ export interface Drop { id: number; kind: Kind; x: number; y: number; speed: num
 export interface Spark { id: number; x: number; y: number; text: string; life: number }
 export interface Game {
   phase: Phase; resume: 'countdown' | 'playing'; countdown: number; remaining: number
-  x: number; score: number; hearts: number; combo: number; maxCombo: number; caught: number
+  x: number; score: number; hits: number; combo: number; maxCombo: number; caught: number
   shield: boolean; invincible: number; drops: Drop[]; sparks: Spark[]
-  spawnIn: number; shieldIn: number; serial: number; event: 'catch' | 'hurt' | 'shield' | null
+  spawnIn: number; meteorIn: number; shieldIn: number; serial: number; event: 'catch' | 'hurt' | 'shield' | null
 }
 export const WIDTH = 640
 export const HEIGHT = 480
-export const BUNNY = { width: 80, height: 88, top: 346 } as const
+export const BUNNY = { width: 72, height: 79.2, top: 354.8 } as const
 export const CATCH_Y = 418
 export const DURATION = 60
 // SVG의 귀 두 개와 몸통·바구니 범위. 표시 크기와 같은 좌표로 판정한다.
@@ -27,11 +27,10 @@ const BUNNY_HITBOXES = [
 }))
 const ITEM_RADIUS: Record<Kind, number> = { star: 24, gold: 28, meteor: 24, shield: 26 }
 export const multiplier = (combo: number) => Math.min(3, 1 + Math.floor(combo / 5))
-export const level = (remaining: number) => remaining > 40 ? 1 : remaining > 20 ? 2 : 3
 export function createGame(phase: Phase = 'ready'): Game {
   return { phase, resume: 'playing', countdown: 3, remaining: DURATION, x: WIDTH / 2,
-    score: 0, hearts: 3, combo: 0, maxCombo: 0, caught: 0, shield: false, invincible: 0,
-    drops: [], sparks: [], spawnIn: 0.15, shieldIn: 9, serial: 0, event: null }
+    score: 0, hits: 0, combo: 0, maxCombo: 0, caught: 0, shield: false, invincible: 0,
+    drops: [], sparks: [], spawnIn: 0.15, meteorIn: 2.5, shieldIn: 9, serial: 0, event: null }
 }
 export function pauseGame(game: Game): Game {
   return game.phase === 'playing' || game.phase === 'countdown'
@@ -61,11 +60,15 @@ export function stepGame(previous: Game, elapsed: number, direction: number, tar
     const collides = BUNNY_HITBOXES.some(box =>
       drop.y - radius <= box.bottom && next.y + radius >= box.top &&
       next.x + radius >= g.x + box.left && next.x - radius <= g.x + box.right)
-    if (collides && g.hearts > 0) {
+    if (collides) {
       if (drop.kind === 'meteor') {
         if (g.invincible === 0) {
           if (g.shield) { g.shield = false; g.event = 'shield' }
-          else { g.hearts--; g.combo = 0; spark('−1', next.x); g.event = 'hurt' }
+          else {
+            const penalty = Math.min(30, g.score)
+            g.score -= penalty; g.hits++; g.combo = 0
+            spark(`−${penalty}`, next.x); g.event = 'hurt'
+          }
           g.invincible = 1.4
         }
       } else if (drop.kind === 'shield') {
@@ -80,16 +83,18 @@ export function stepGame(previous: Game, elapsed: number, direction: number, tar
       if (next.kind === 'star' || next.kind === 'gold') g.combo = 0
     } else g.drops.push(next)
   }
-  if (g.remaining === 0 || g.hearts === 0) { g.phase = 'over'; return g }
-  const stage = level(g.remaining)
-  g.spawnIn -= dt; g.shieldIn -= dt
+  if (g.remaining === 0) { g.phase = 'over'; return g }
+  const progress = 1 - g.remaining / DURATION
+  g.spawnIn -= dt; g.meteorIn -= dt; g.shieldIn -= dt
   const spawn = (kind: Kind) => g.drops.push({ id: ++g.serial, kind,
-    x: 42 + random() * (WIDTH - 84), y: -24, speed: 125 + stage * 27 + random() * 26 })
+    x: 42 + random() * (WIDTH - 84), y: -24,
+    speed: (kind === 'star' || kind === 'gold' ? 155 + progress * 165 : 145 + progress * 80) + random() * 26 })
   if (g.spawnIn <= 0) {
     const roll = random()
-    spawn(roll < 0.18 + stage * 0.025 ? 'meteor' : roll > 0.88 ? 'gold' : 'star')
-    g.spawnIn = 0.79 - stage * 0.13 + random() * 0.18
+    spawn(roll > 0.88 ? 'gold' : 'star')
+    g.spawnIn = 0.75 - progress * 0.3 + random() * 0.12
   }
+  if (g.meteorIn <= 0) { spawn('meteor'); g.meteorIn = 2.8 - progress * 1.9 + random() * 0.2 }
   if (g.shieldIn <= 0) { spawn('shield'); g.shieldIn = 13 }
   return g
 }
