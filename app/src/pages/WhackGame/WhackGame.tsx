@@ -3,7 +3,7 @@
 // 클릭해 점수를 쌓는다. 시간이 지날수록 두더지가 더 빨리 숨고, 동시에 최대 3마리가 나온다.
 // 게임 종료 시 잡은 수를 scoreStore에 제출(최고 점수 유지)한다.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import GamePage from '../../components/GamePage/GamePage'
 import { submitScore } from '../../lib/scoreStore'
@@ -13,6 +13,8 @@ import hammerImage from './assets/hammer.webp'
 import './WhackGame.css'
 
 const HOLES = 9
+const COLUMNS = 3
+const CENTER = 4
 const DURATION = 30 // 초
 
 type Status = 'ready' | 'playing' | 'over'
@@ -26,6 +28,9 @@ export default function WhackGame() {
   const [timeLeft, setTimeLeft] = useState(DURATION)
   const [status, setStatus] = useState<Status>('ready')
   const [strikes, setStrikes] = useState<Record<number, Strike>>({})
+  const [selected, setSelected] = useState(CENTER)
+  const holes = useRef<(HTMLButtonElement | null)[]>([])
+  const restart = useRef<HTMLButtonElement>(null)
   const strikeId = useRef(0)
   const hitHoles = useRef(new Set<number>())
   const effectTimers = useRef(new Set<number>())
@@ -88,6 +93,7 @@ export default function WhackGame() {
     setActive([])
     setStrikes({})
     setStatus('playing')
+    setSelected(CENTER)
     tick.current = window.setInterval(() => {
       timeRef.current -= 1
       setTimeLeft(timeRef.current)
@@ -126,6 +132,31 @@ export default function WhackGame() {
 
   useEffect(() => clearTimers, [clearTimers])
 
+  useEffect(() => {
+    if (status === 'playing') holes.current[CENTER]?.focus({ preventScroll: true })
+    if (status === 'over') restart.current?.focus({ preventScroll: true })
+  }, [status])
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    if (statusRef.current !== 'playing') return
+    const row = Math.floor(i / COLUMNS)
+    const column = i % COLUMNS
+    let next = i
+    switch (event.key) {
+      case 'ArrowUp': next = row > 0 ? i - COLUMNS : i; break
+      case 'ArrowDown': next = row < COLUMNS - 1 ? i + COLUMNS : i; break
+      case 'ArrowLeft': next = column > 0 ? i - 1 : i; break
+      case 'ArrowRight': next = column < COLUMNS - 1 ? i + 1 : i; break
+      case ' ':
+        event.preventDefault()
+        if (!event.repeat) whack(i)
+        return
+      default: return
+    }
+    event.preventDefault()
+    holes.current[next]?.focus({ preventScroll: true })
+  }
+
   return (
     <GamePage gameId="whack" title="두더지 잡기">
       <div className={'whack' + (Object.keys(strikes).length ? ' whack--swinging' : '')}>
@@ -144,12 +175,17 @@ export default function WhackGame() {
           <div className="whack__timebar-fill" style={{ width: `${(timeLeft / DURATION) * 100}%` }} />
         </div>
 
-        <div className="whack__grid">
+        <div className="whack__grid" role="group" aria-label="두더지 구멍" aria-describedby="whack-controls">
           {Array.from({ length: HOLES }).map((_, i) => (
             <button
               key={i}
-              className={'whack__hole' + (active.includes(i) ? ' up' : '') + (strikes[i]?.caught ? ' hit' : '')}
-              onClick={() => whack(i)}
+              ref={element => { holes.current[i] = element }}
+              className={'whack__hole' + (active.includes(i) ? ' up' : '') + (strikes[i]?.caught ? ' hit' : '') + (status === 'playing' && selected === i ? ' is-selected' : '')}
+              tabIndex={selected === i ? 0 : -1}
+              onFocus={() => setSelected(i)}
+              onClick={event => { event.currentTarget.focus({ preventScroll: true }); whack(i) }}
+              onKeyDown={event => handleKeyDown(event, i)}
+              onKeyUp={event => { if (event.key === ' ') event.preventDefault() }}
               aria-label={active.includes(i) ? '두더지' : '구멍'}
               disabled={status !== 'playing'}
             >
@@ -176,7 +212,7 @@ export default function WhackGame() {
             <div className="whack__card">
               <img className="whack__mascot" src={moleImage} alt="" draggable={false} />
               <h3>두더지 잡기</h3>
-              <p className="whack__card-desc">{DURATION}초 동안 튀어나오는 두더지를 최대한 많이 클릭하세요.</p>
+              <p className="whack__card-desc">{DURATION}초 동안 두더지를 잡으세요. 클릭 또는 방향키 이동 + 스페이스바 타격!</p>
               <button className="whack__btn whack__btn--primary" onClick={start}>시작하기</button>
             </div>
           </div>
@@ -188,14 +224,14 @@ export default function WhackGame() {
               <h3>시간 종료</h3>
               <p className="whack__card-score">{score}마리</p>
               <div className="whack__card-btns">
-                <button className="whack__btn whack__btn--primary" onClick={start}>다시하기</button>
+                <button ref={restart} className="whack__btn whack__btn--primary" onClick={start}>다시하기</button>
                 <button className="whack__btn" onClick={() => navigate('/')}>게임 목록</button>
               </div>
             </div>
           </div>
         )}
 
-        <p className="whack__hint">시간이 지날수록 더 빨라져요! 10초 후부터 2마리, 20초 후부터 3마리가 함께 나옵니다.</p>
+        <p id="whack-controls" className="whack__hint">클릭 또는 ↑ ↓ ← → 이동 · 스페이스바 타격<br />10초 후부터 2마리, 20초 후부터 3마리가 함께 나옵니다.</p>
       </div>
     </GamePage>
   )

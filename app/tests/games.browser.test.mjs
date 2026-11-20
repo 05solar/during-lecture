@@ -170,3 +170,66 @@ test('moles increase from one to three over time and can be caught independently
   await page.clock.runFor(1000)
   assert.ok(await up.count() <= 1)
 })
+
+test('mole keyboard controls move within the grid, strike once per press and support restart', async () => {
+  await page.addInitScript(() => { Math.random = () => 0.5 })
+  const now = new Date('2026-01-01T00:00:00Z')
+  await page.clock.install({ time: now })
+  await goto('whack')
+  await page.clock.pauseAt(new Date(now.getTime() + 60000))
+  await page.getByRole('button', { name: '시작하기', exact: true }).focus()
+  await page.keyboard.press('Enter')
+  const holes = page.locator('.whack__hole')
+  const score = page.locator('.whack__stat-value').first()
+  const selected = async index => {
+    assert.equal(await holes.nth(index).evaluate(el => el === document.activeElement), true)
+    assert.match(await holes.nth(index).getAttribute('class'), /is-selected/)
+    assert.equal(await page.locator('.whack__hole[tabindex="0"]').count(), 1)
+  }
+  await selected(4)
+  await page.keyboard.down('Space')
+  await page.keyboard.down('Space')
+  assert.equal(await score.textContent(), '1')
+  await page.clock.runFor(260)
+  await page.keyboard.press('ArrowRight')
+  await selected(5)
+  // Holding Space while moving must not auto-hit another mole or fire on release.
+  await page.keyboard.down('Space')
+  await page.keyboard.up('Space')
+  assert.equal(await score.textContent(), '1')
+  await page.keyboard.press('Space')
+  assert.equal(await score.textContent(), '2')
+
+  const scroll = await page.evaluate(() => scrollY)
+  for (const [key, index] of [
+    ['ArrowRight', 5], ['ArrowUp', 2], ['ArrowUp', 2],
+    ['ArrowLeft', 1], ['ArrowLeft', 0], ['ArrowLeft', 0],
+    ['ArrowDown', 3], ['ArrowDown', 6], ['ArrowDown', 6],
+    ['ArrowRight', 7], ['ArrowRight', 8], ['ArrowRight', 8],
+  ]) {
+    await page.keyboard.press(key)
+    await selected(index)
+  }
+  await page.keyboard.press('Space') // Empty hole: no points and no scrolling.
+  assert.equal(await score.textContent(), '2')
+  await page.clock.runFor(100)
+  assert.equal(await page.evaluate(() => scrollY), scroll)
+  await page.keyboard.press('Tab')
+  assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('whack__hole')), false)
+  await holes.nth(0).click()
+  await selected(0)
+  await page.keyboard.press('ArrowDown')
+  await selected(3)
+
+  await page.clock.runFor(30000)
+  const replay = page.getByRole('button', { name: '다시하기', exact: true })
+  assert.equal(await replay.evaluate(el => el === document.activeElement), true)
+  assert.equal(await page.locator('.whack__hole.is-selected').count(), 0)
+  await page.keyboard.press('ArrowLeft')
+  assert.equal(await score.textContent(), '2')
+  await page.keyboard.press('Enter')
+  await selected(4)
+  assert.equal(await score.textContent(), '0')
+  await page.keyboard.press('Space')
+  assert.equal(await score.textContent(), '1')
+})

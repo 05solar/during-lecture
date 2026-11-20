@@ -98,6 +98,10 @@
 .whack__hole:disabled {
   cursor: default;
 }
+.whack__hole.is-selected {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* 흙더미(구멍 앞쪽) — 낮게 깔아 두더지가 잘 보이게 */
 .whack__dirt {
