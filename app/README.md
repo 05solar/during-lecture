@@ -44,7 +44,7 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
 │
 └─ src/
    ├─ main.tsx                앱 진입점 (HashRouter로 App 렌더)
-   ├─ App.tsx / App.css       루트 레이아웃 + 9개 게임 라우트 정의
+   ├─ App.tsx / App.css       루트 레이아웃 + 12개 게임 라우트 정의
    ├─ vite-env.d.ts           Vite 타입 참조
    │
    ├─ styles/
@@ -74,6 +74,8 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
       ├─ GoGame/              바둑 (vs AI, 웹워커: go.ts·goAi.ts·goWorker.ts)
       ├─ BurgerGame/          버거 타워 (matter-js, ingredients.ts + assets/ PNG 8종)
       ├─ WhackGame/           두더지 잡기 (픽셀 캐릭터·피격 표정·망치, 타격 애니메이션)
+      ├─ StarBunnyGame/       별빛 토끼 (60초 수집 게임, engine.ts + 직접 그린 assets/*.svg)
+      ├─ OddColorGame/        다른 색 찾기
       ├─ TsumegoGame/         사활 학습 (GGG 상급 SGF 140문제, 변화도·해설·복습 기록)
       └─ GamePlaceholder/     /game/:id 미등록 id 폴백 안내
 
@@ -91,6 +93,7 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
 
 | 게임 | id | 점수 방식 | 비고 |
 | --- | --- | --- | --- |
+| 별빛 토끼 | `starbunny` | 60초 또는 기회 소진 후 모은 점수 | 좌우 이동, 3기회, 연속 수집 최대 3배, 보호막 |
 | 2048 | `2048` | 게임오버 시 점수(최고점 유지) | 방향키/스와이프 |
 | 수박 게임 | `watermelon` | 게임오버 시 점수 | matter-js 물리 |
 | 워들 | `wordle` | 적은 시도일수록 고점(최대 600) | — |
@@ -101,6 +104,7 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
 | 버거 타워 | `burger` | 쌓은 높이 | matter-js 물리, 좌클릭/스페이스로 낙하 |
 | 두더지 잡기 | `whack` | 잡은 수(30초) | 반응 게임, 시간이 갈수록 빨라짐 |
 | 사활 훈련 | `tsumego` | 도움 없이 해답의 응수들을 해결한 점수 | 상급 140문제, 해설 복기·자유 분석·반복 복습 |
+| 다른 색 찾기 | `oddcolor` | 제한시간 동안 찾은 단계 점수 | 색 구분 퍼즐 |
 
 원본 7종(버거 제외)은 `Gangneung` 프로젝트에서 이식하며 여행앱 결합(플레이어/백엔드)을 제거하고
 이 사이트의 오프화이트 테마와 `scoreStore` 점수 시스템에 맞게 조정했다.
@@ -123,5 +127,19 @@ app/                          레포의 app/ 하위 = 이 프로젝트 루트
 
 ## 현재 상태
 
-- 메인 페이지 + 점수 시스템 + 미니게임 8종(2048·수박·워들·블랙잭·돌깨기·오목·바둑·버거 타워) 동작.
+- 메인 페이지 + 점수 시스템 + 미니게임 12종 동작.
 - 자세한 진행 내역은 `PROCESS.md` 참고.
+
+## 별빛 토끼
+
+`/#/game/starbunny`에서 플레이한다. 방향키 또는 A/D, 마우스 이동, 터치 드래그와 하단 이동 버튼을 지원한다.
+별은 10점, 황금 별은 30점이며 5연속부터 2배, 10연속부터 3배다. 별을 놓치면 연속 기록만 초기화된다.
+운석은 기회를 하나 줄이고, 보호막은 운석을 한 번 막는다. 20초마다 난이도가 올라가며 60초 또는 3기회 소진 시 종료된다.
+P/Escape 또는 버튼으로 일시정지하며, 다른 창으로 이동할 때도 자동으로 멈춘다. 효과음은 기본 꺼짐이다.
+
+- `src/pages/StarBunnyGame/StarBunnyGame.tsx` / `.css`: 화면, 입력, 효과음, 결과와 최고 점수 연동.
+- `src/pages/StarBunnyGame/engine.ts`: 생성·이동·충돌·콤보·시간 규칙.
+- `src/pages/StarBunnyGame/assets/`: 직접 그린 픽셀 SVG 7종. `build-cover.mjs`로 원본을 합성해 커버를 재생성한다.
+- `tests/starbunny.test.mjs`: 엔진 규칙 테스트. `npm test`로 기존 사활 테스트와 함께 실행한다.
+- `tests/starbunny.browser.test.mjs`: 실제 입력, 모바일 크기, 전체 라운드, 저장·재시작 테스트. `npm run test:browser`로 실행한다.
+- 브라우저 테스트는 Playwright Chromium 설치가 필요하다. 미설치 환경에서는 `npx playwright install chromium`을 먼저 실행한다.

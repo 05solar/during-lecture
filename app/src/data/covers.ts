@@ -12,8 +12,10 @@ import coverBaduk from '../assets/game-covers/baduk.webp'
 import coverBurger from '../assets/game-covers/burger.webp'
 import coverWhack from '../assets/game-covers/whack.webp'
 import coverOddColor from '../assets/game-covers/oddcolor.webp'
+import coverStarBunny from '../pages/StarBunnyGame/assets/cover.svg'
 
 export const GAME_COVERS: Record<string, string> = {
+  starbunny: coverStarBunny,
   '2048': cover2048,
   watermelon: coverWatermelon,
   wordle: coverWordle,

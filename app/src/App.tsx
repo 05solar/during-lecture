@@ -19,6 +19,7 @@ import GamePlaceholder from './pages/GamePlaceholder/GamePlaceholder'
 import './App.css'
 
 const TsumegoGame = lazy(() => import('./pages/TsumegoGame/TsumegoGame'))
+const StarBunnyGame = lazy(() => import('./pages/StarBunnyGame/StarBunnyGame'))
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/game/whack" element={<WhackGame />} />
           <Route path="/game/tsumego" element={<Suspense fallback={<p role="status">사활 문제집을 불러오고 있습니다.</p>}><TsumegoGame /></Suspense>} />
           <Route path="/game/oddcolor" element={<OddColorGame />} />
+          <Route path="/game/starbunny" element={<Suspense fallback={<p role="status">별빛을 모으고 있습니다.</p>}><StarBunnyGame /></Suspense>} />
           <Route path="/game/:id" element={<GamePlaceholder />} />
           <Route path="*" element={<Home />} />
         </Routes>

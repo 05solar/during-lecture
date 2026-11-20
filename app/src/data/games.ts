@@ -55,6 +55,16 @@ export type GlyphKey =
 
 export const GAMES: GameMeta[] = [
   {
+    id: 'starbunny',
+    category: 'arcade',
+    difficulty: 'easy',
+    title: '별빛 토끼',
+    tagline: '좌우로 사뿐사뿐. 60초 동안 별을 받고 운석을 피하는 픽셀 산책.',
+    scoreUnit: '최고 점수',
+    icon: 'mask',
+    status: 'ready',
+  },
+  {
     id: '2048',
     category: 'puzzle',
     difficulty: 'normal',
