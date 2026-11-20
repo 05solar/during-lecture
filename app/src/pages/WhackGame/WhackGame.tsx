@@ -1,5 +1,5 @@
 // WhackGame 페이지
-// 두더지 잡기(Whack-a-Mole). 3x3 구멍에서 두더지가 무작위로 튀어나오면 제한시간(30초) 안에
+// 두더지 잡기(Whack-a-Mole). 3x3 구멍에서 두더지가 무작위로 튀어나오면 제한시간(60초) 안에
 // 클릭해 점수를 쌓는다. 시간이 지날수록 두더지가 더 빨리 숨고, 동시에 최대 3마리가 나온다.
 // 게임 종료 시 잡은 수를 scoreStore에 제출(최고 점수 유지)한다.
 
@@ -15,7 +15,8 @@ import './WhackGame.css'
 const HOLES = 9
 const COLUMNS = 3
 const CENTER = 4
-const DURATION = 30 // 초
+const DURATION = 60 // 초
+const WAVE_STAGE_SECONDS = DURATION / 3
 
 type Status = 'ready' | 'playing' | 'over'
 type Strike = { id: number; caught: boolean }
@@ -65,7 +66,7 @@ export default function WhackGame() {
   const popLoop = useCallback(() => {
     if (statusRef.current !== 'playing') return
     const elapsed = DURATION - timeRef.current
-    const count = Math.min(3, 1 + Math.floor(elapsed / 10))
+    const count = Math.min(3, 1 + Math.floor(elapsed / WAVE_STAGE_SECONDS))
     const available = Array.from({ length: HOLES }, (_, i) => i).filter(i => !hitHoles.current.has(i))
     const next: number[] = []
     while (next.length < count && available.length > 0) {
@@ -74,11 +75,11 @@ export default function WhackGame() {
     }
     activeRef.current = next
     setActive(next)
-    const visible = Math.max(480, 950 - elapsed * 16) // 두더지가 보이는 시간(점점 짧아짐)
+    const visible = Math.max(900, 1500 - elapsed * 10) // 1.5초에서 약 0.9초까지 서서히 빨라짐
     moleTimer.current = window.setTimeout(() => {
       activeRef.current = []
       setActive([])
-      gapTimer.current = window.setTimeout(popLoop, 170)
+      gapTimer.current = window.setTimeout(popLoop, 260)
     }, visible)
   }, [])
 
@@ -127,7 +128,7 @@ export default function WhackGame() {
     if (activeRef.current.length > 0) return
     clearTimeout(moleTimer.current)
     clearTimeout(gapTimer.current)
-    gapTimer.current = window.setTimeout(popLoop, 260)
+    gapTimer.current = window.setTimeout(popLoop, 360)
   }
 
   useEffect(() => clearTimers, [clearTimers])
@@ -231,7 +232,7 @@ export default function WhackGame() {
           </div>
         )}
 
-        <p id="whack-controls" className="whack__hint">클릭 또는 ↑ ↓ ← → 이동 · 스페이스바 타격<br />10초 후부터 2마리, 20초 후부터 3마리가 함께 나옵니다.</p>
+        <p id="whack-controls" className="whack__hint">클릭 또는 ↑ ↓ ← → 이동 · 스페이스바 타격<br />{WAVE_STAGE_SECONDS}초 후부터 2마리, {WAVE_STAGE_SECONDS * 2}초 후부터 3마리가 함께 나옵니다.</p>
       </div>
     </GamePage>
   )

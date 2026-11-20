@@ -159,7 +159,7 @@ export const GAMES: GameMeta[] = [
     category: 'arcade',
     difficulty: 'normal',
     title: '두더지 잡기',
-    tagline: '30초 동안 튀어나오는 두더지를 최대한 많이 클릭하는 반응 게임.',
+    tagline: '60초 동안 클릭 또는 방향키와 스페이스바로 두더지를 잡는 반응 게임.',
     scoreUnit: '최고 점수',
     icon: 'grid',
     status: 'ready',
