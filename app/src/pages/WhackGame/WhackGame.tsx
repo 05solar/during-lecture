@@ -1,6 +1,6 @@
 // WhackGame 페이지
 // 두더지 잡기(Whack-a-Mole). 3x3 구멍에서 두더지가 무작위로 튀어나오면 제한시간(30초) 안에
-// 클릭해 점수를 쌓는다. 시간이 지날수록 두더지가 더 빨리 숨는다.
+// 클릭해 점수를 쌓는다. 시간이 지날수록 두더지가 더 빨리 숨고, 동시에 최대 3마리가 나온다.
 // 게임 종료 시 잡은 수를 scoreStore에 제출(최고 점수 유지)한다.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -21,7 +21,7 @@ const STRIKE_MS = 540
 
 export default function WhackGame() {
   const navigate = useNavigate()
-  const [active, setActive] = useState(-1) // 두더지가 나온 구멍 index (-1=없음)
+  const [active, setActive] = useState<number[]>([]) // 두더지가 나온 구멍들
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(DURATION)
   const [status, setStatus] = useState<Status>('ready')
@@ -30,7 +30,7 @@ export default function WhackGame() {
   const hitHoles = useRef(new Set<number>())
   const effectTimers = useRef(new Set<number>())
 
-  const activeRef = useRef(-1)
+  const activeRef = useRef<number[]>([])
   const scoreRef = useRef(0)
   const timeRef = useRef(DURATION)
   const statusRef = useRef<Status>('ready')
@@ -51,25 +51,28 @@ export default function WhackGame() {
     clearTimers()
     statusRef.current = 'over'
     setStatus('over')
-    setActive(-1)
+    setActive([])
     setStrikes({})
-    activeRef.current = -1
+    activeRef.current = []
     submitScore('whack', scoreRef.current)
   }, [clearTimers])
 
   const popLoop = useCallback(() => {
     if (statusRef.current !== 'playing') return
-    const available = Array.from({ length: HOLES }, (_, i) => i).filter(i => !hitHoles.current.has(i))
-    const idx = available[Math.floor(Math.random() * available.length)]
-    activeRef.current = idx
-    setActive(idx)
     const elapsed = DURATION - timeRef.current
+    const count = Math.min(3, 1 + Math.floor(elapsed / 10))
+    const available = Array.from({ length: HOLES }, (_, i) => i).filter(i => !hitHoles.current.has(i))
+    const next: number[] = []
+    while (next.length < count && available.length > 0) {
+      const choice = Math.floor(Math.random() * available.length)
+      next.push(available.splice(choice, 1)[0])
+    }
+    activeRef.current = next
+    setActive(next)
     const visible = Math.max(480, 950 - elapsed * 16) // 두더지가 보이는 시간(점점 짧아짐)
     moleTimer.current = window.setTimeout(() => {
-      if (activeRef.current === idx) {
-        activeRef.current = -1
-        setActive(-1)
-      }
+      activeRef.current = []
+      setActive([])
       gapTimer.current = window.setTimeout(popLoop, 170)
     }, visible)
   }, [])
@@ -78,11 +81,11 @@ export default function WhackGame() {
     clearTimers()
     scoreRef.current = 0
     timeRef.current = DURATION
-    activeRef.current = -1
+    activeRef.current = []
     statusRef.current = 'playing'
     setScore(0)
     setTimeLeft(DURATION)
-    setActive(-1)
+    setActive([])
     setStrikes({})
     setStatus('playing')
     tick.current = window.setInterval(() => {
@@ -95,7 +98,7 @@ export default function WhackGame() {
 
   const whack = (i: number) => {
     if (statusRef.current !== 'playing' || hitHoles.current.has(i)) return
-    const caught = i === activeRef.current
+    const caught = activeRef.current.includes(i)
     const id = ++strikeId.current
     setStrikes(prev => ({ ...prev, [i]: { id, caught } }))
     if (caught) hitHoles.current.add(i)
@@ -113,8 +116,9 @@ export default function WhackGame() {
     if (!caught) return
     scoreRef.current += 1
     setScore(scoreRef.current)
-    activeRef.current = -1
-    setActive(-1)
+    activeRef.current = activeRef.current.filter(hole => hole !== i)
+    setActive(activeRef.current)
+    if (activeRef.current.length > 0) return
     clearTimeout(moleTimer.current)
     clearTimeout(gapTimer.current)
     gapTimer.current = window.setTimeout(popLoop, 260)
@@ -144,9 +148,9 @@ export default function WhackGame() {
           {Array.from({ length: HOLES }).map((_, i) => (
             <button
               key={i}
-              className={'whack__hole' + (active === i ? ' up' : '') + (strikes[i]?.caught ? ' hit' : '')}
+              className={'whack__hole' + (active.includes(i) ? ' up' : '') + (strikes[i]?.caught ? ' hit' : '')}
               onClick={() => whack(i)}
-              aria-label={active === i ? '두더지' : '구멍'}
+              aria-label={active.includes(i) ? '두더지' : '구멍'}
               disabled={status !== 'playing'}
             >
               <span className="whack__dirt" />
@@ -191,7 +195,7 @@ export default function WhackGame() {
           </div>
         )}
 
-        <p className="whack__hint">구멍에서 올라온 두더지를 빠르게 클릭! 시간이 지날수록 더 빨라집니다.</p>
+        <p className="whack__hint">시간이 지날수록 더 빨라져요! 10초 후부터 2마리, 20초 후부터 3마리가 함께 나옵니다.</p>
       </div>
     </GamePage>
   )
