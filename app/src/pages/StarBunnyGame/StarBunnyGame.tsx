@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import GamePage from '../../components/GamePage/GamePage'
 import { getBestScore, submitScore } from '../../lib/scoreStore'
-import { createGame, stepGame, pauseGame, resumeGame, multiplier, WIDTH, HEIGHT, type Kind } from './engine'
+import { createGame, stepGame, pauseGame, resumeGame, multiplier, WIDTH, HEIGHT, BUNNY, type Kind } from './engine'
 import bunny from './assets/bunny.svg'
 import star from './assets/star.svg'
 import gold from './assets/gold.svg'
@@ -131,7 +131,7 @@ export default function StarBunnyGame() {
             {game.drops.map(drop => <img key={drop.id} src={sprites[drop.kind]} alt="" draggable={false}
               className={`starbunny__drop starbunny__drop--${drop.kind}`} style={{ left: `${drop.x / WIDTH * 100}%`, top: `${drop.y / HEIGHT * 100}%` }} />)}
             <div className={`starbunny__bunny ${game.shield ? 'is-shielded' : ''} ${game.invincible > 0 ? 'is-invincible' : ''}`}
-              style={{ left: `${game.x / WIDTH * 100}%` }} data-x={Math.round(game.x)}><img src={bunny} alt="별 바구니를 든 토끼" draggable={false} /></div>
+              style={{ left: `${game.x / WIDTH * 100}%`, top: `${BUNNY.top / HEIGHT * 100}%`, width: `${BUNNY.width / WIDTH * 100}%`, height: `${BUNNY.height / HEIGHT * 100}%` }} data-x={Math.round(game.x)}><img src={bunny} alt="별 바구니를 든 토끼" draggable={false} /></div>
             {game.sparks.map(s => <span key={s.id} className="starbunny__spark" aria-hidden="true" style={{ left: `${s.x / WIDTH * 100}%`, top: `${s.y / HEIGHT * 100}%`, opacity: Math.min(1, s.life * 3) }}>{s.text}</span>)}
             {game.phase === 'countdown' && <div className="starbunny__countdown" role="status"><strong>{Math.ceil(game.countdown)}</strong></div>}
             {(game.phase === 'ready' || game.phase === 'paused' || game.phase === 'over') && <div className="starbunny__overlay">

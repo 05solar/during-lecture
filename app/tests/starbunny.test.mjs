@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildSync } from 'esbuild'
 const code = buildSync({ entryPoints: ['src/pages/StarBunnyGame/engine.ts'], bundle: true, write: false, platform: 'node', format: 'esm' }).outputFiles[0].text
-const { createGame, stepGame, pauseGame, resumeGame, multiplier, level, CATCH_Y } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+const { createGame, stepGame, pauseGame, resumeGame, multiplier, level, CATCH_Y, BUNNY } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
 const tick = g => stepGame(g, 1 / 60, 0, null, () => 0.5)
 const catchDrop = (g, kind, x = g.x) => tick({ ...g, spawnIn: 10, drops: [{ id: 1000, kind, x, y: CATCH_Y - 13, speed: 180 }] })
 
@@ -42,12 +42,12 @@ test('missing a star breaks streak without losing a heart; distant drops do not 
   assert.equal(g.hearts, 3)
 })
 
-test('expanded bunny and item hitboxes catch edges on both sides without reaching distant drops', () => {
-  for (const [kind, reach] of [['star', 96], ['gold', 100], ['shield', 98], ['meteor', 96]]) {
+test('smaller bunny catches touching items on both sides without reaching empty space', () => {
+  for (const [kind, reach] of [['star', 60], ['gold', 64], ['shield', 62], ['meteor', 60]]) {
     for (const sign of [-1, 1]) {
       const initial = createGame('playing')
       const edge = catchDrop(initial, kind, initial.x + sign * reach)
-      assert.equal(edge.drops.length, 0, `${kind} should collide at the expanded edge`)
+      assert.equal(edge.drops.length, 0, `${kind} should collide at the visible body edge`)
       if (kind === 'meteor') assert.equal(edge.hearts, 2)
       else if (kind === 'shield') assert.equal(edge.shield, true)
       else assert.ok(edge.score > 0)
@@ -59,15 +59,25 @@ test('expanded bunny and item hitboxes catch edges on both sides without reachin
   }
 })
 
-test('expanded vertical hitbox catches above the basket and does not score twice', () => {
+test('ear tips collect items once, with no collision above or beside the ears or below the basket', () => {
   const initial = { ...createGame('playing'), spawnIn: 10 }
-  const drop = { id: 1000, kind: 'star', x: initial.x + 80, y: CATCH_Y - 54, speed: 180 }
-  const caught = tick({ ...initial, drops: [drop] })
-  assert.equal(caught.score, 10)
-  assert.equal(tick(caught).score, 10)
-  const above = tick({ ...initial, drops: [{ ...drop, y: CATCH_Y - 56 }] })
+  const drop = { id: 1000, kind: 'star', x: initial.x, y: BUNNY.top - 27, speed: 180 }
+  for (const offset of [-16, 16]) {
+    const caught = tick({ ...initial, drops: [{ ...drop, x: initial.x + offset }] })
+    assert.equal(caught.score, 10)
+    assert.equal(tick(caught).score, 10)
+  }
+  const above = tick({ ...initial, drops: [{ ...drop, y: BUNNY.top - 28 }] })
   assert.equal(above.score, 0)
   assert.equal(above.drops.length, 1)
+  for (const offset of [-53, 53]) {
+    const beside = tick({ ...initial, drops: [{ ...drop, x: initial.x + offset }] })
+    assert.equal(beside.score, 0)
+    assert.equal(beside.drops.length, 1)
+  }
+  const below = tick({ ...initial, drops: [{ ...drop, y: BUNNY.top + BUNNY.height + 25 }] })
+  assert.equal(below.score, 0)
+  assert.equal(below.drops.length, 1)
 })
 
 test('shield absorbs one meteor; invulnerability prevents stacked damage; three hits end a run', () => {
@@ -89,9 +99,9 @@ test('shield absorbs one meteor; invulnerability prevents stacked damage; three 
 test('movement is bounded and time expiry freezes result; restart clears all state', () => {
   let g = createGame('playing')
   for (let i = 0; i < 180; i++) g = stepGame(g, 1 / 60, -1, null)
-  assert.equal(g.x, 72)
+  assert.equal(g.x, 40)
   for (let i = 0; i < 180; i++) g = stepGame(g, 1 / 60, 0, 10000)
-  assert.equal(g.x, 568)
+  assert.equal(g.x, 600)
   g = tick({ ...g, remaining: 0.001, score: 400 })
   assert.equal(g.phase, 'over')
   assert.equal(g.remaining, 0)

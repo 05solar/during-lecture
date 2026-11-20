@@ -41,7 +41,8 @@ test('home card, original art and desktop/mobile layouts load without overflow',
   await page.getByRole('button', { name: '시작' }).waitFor()
   assert.ok(await page.locator('.starbunny img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)))
   assert.equal(await page.locator('.starbunny__guide, .starbunny__intro').count(), 0)
-  assert.ok((await page.locator('.starbunny__stage').boundingBox()).width >= 1000)
+  const desktopStage = await page.locator('.starbunny__stage').boundingBox()
+  assert.ok(desktopStage.width >= 880 && desktopStage.width <= 900)
   await page.screenshot({ path: join(tmpdir(), 'starbunny-desktop.png'), fullPage: true })
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 })
@@ -49,7 +50,7 @@ test('home card, original art and desktop/mobile layouts load without overflow',
     const button = await page.getByRole('button', { name: '시작' }).boundingBox()
     const bounds = await page.locator('.starbunny__stage').boundingBox()
     assert.ok(bounds.width >= width - 26)
-    assert.ok(bounds.height >= 420)
+    assert.ok(bounds.height >= 380 && bounds.height < 420)
     assert.ok(button.y >= bounds.y && button.y + button.height <= bounds.y + bounds.height)
   }
   await page.setViewportSize({ width: 390, height: 844 })

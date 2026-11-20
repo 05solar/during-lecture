@@ -11,11 +11,20 @@ export interface Game {
 }
 export const WIDTH = 640
 export const HEIGHT = 480
+export const BUNNY = { width: 80, height: 88, top: 346 } as const
 export const CATCH_Y = 418
 export const DURATION = 60
-// 넓은 토끼 영역과 아이템 자체의 반경을 합산해 가장자리도 받는다.
-const BUNNY_HALF_WIDTH = 72
-const BUNNY_HALF_HEIGHT = 28
+// SVG의 귀 두 개와 몸통·바구니 범위. 표시 크기와 같은 좌표로 판정한다.
+const BUNNY_HITBOXES = [
+  { left: 6, right: 18, top: 0, bottom: 20 },
+  { left: 22, right: 34, top: 0, bottom: 20 },
+  { left: 2, right: 38, top: 20, bottom: 44 },
+].map(box => ({
+  left: (box.left / 40 - 0.5) * BUNNY.width,
+  right: (box.right / 40 - 0.5) * BUNNY.width,
+  top: BUNNY.top + box.top / 44 * BUNNY.height,
+  bottom: BUNNY.top + box.bottom / 44 * BUNNY.height,
+}))
 const ITEM_RADIUS: Record<Kind, number> = { star: 24, gold: 28, meteor: 24, shield: 26 }
 export const multiplier = (combo: number) => Math.min(3, 1 + Math.floor(combo / 5))
 export const level = (remaining: number) => remaining > 40 ? 1 : remaining > 20 ? 2 : 3
@@ -44,13 +53,15 @@ export function stepGame(previous: Game, elapsed: number, direction: number, tar
   g.remaining = Math.max(0, g.remaining - dt)
   g.invincible = Math.max(0, g.invincible - dt)
   const move = direction ? direction * 430 * dt : target === null ? 0 : Math.max(-430 * dt, Math.min(430 * dt, target - g.x))
-  g.x = Math.max(BUNNY_HALF_WIDTH, Math.min(WIDTH - BUNNY_HALF_WIDTH, g.x + move))
+  g.x = Math.max(BUNNY.width / 2, Math.min(WIDTH - BUNNY.width / 2, g.x + move))
   const spark = (text: string, x: number) => g.sparks.push({ id: ++g.serial, x, y: CATCH_Y - 34, text, life: 0.8 })
   for (const drop of previous.drops) {
     const next = { ...drop, y: drop.y + drop.speed * dt }
     const radius = ITEM_RADIUS[drop.kind]
-    const crossing = drop.y <= CATCH_Y + BUNNY_HALF_HEIGHT + radius && next.y >= CATCH_Y - BUNNY_HALF_HEIGHT - radius
-    if (crossing && Math.abs(next.x - g.x) <= BUNNY_HALF_WIDTH + radius && g.hearts > 0) {
+    const collides = BUNNY_HITBOXES.some(box =>
+      drop.y - radius <= box.bottom && next.y + radius >= box.top &&
+      next.x + radius >= g.x + box.left && next.x - radius <= g.x + box.right)
+    if (collides && g.hearts > 0) {
       if (drop.kind === 'meteor') {
         if (g.invincible === 0) {
           if (g.shield) { g.shield = false; g.event = 'shield' }
